@@ -712,6 +712,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
   justify-content: center;
   cursor: grab;
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 .canvas-viewport:active {

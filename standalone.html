@@ -720,6 +720,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
   justify-content: center;
   cursor: grab;
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 .canvas-viewport:active {
@@ -1450,7 +1453,7 @@ details[open] .summary-arrow {
         <div class="canvas-viewport" id="canvasViewport">
           <canvas id="fractalCanvas" width="800" height="800"></canvas>
           <div class="canvas-hint" id="canvasHint">
-            <span>Scroll to zoom &bull; Drag to pan &bull; Double-click to reset</span>
+            <span>Pinch or scroll to zoom &bull; Drag to pan &bull; Double-tap to reset</span>
           </div>
         </div>
       </section>
@@ -1603,8 +1606,9 @@ details[open] .summary-arrow {
  * ============================================================================
  * Sierpiński Fractal Studio & Analytical Dashboard
  * ============================================================================
- * Pure client-side simulation, interactive canvas with pan/zoom,
- * analytical combinatorial metrics, and high-res PNG/SVG export.
+ * Pure client-side simulation, interactive canvas with two-finger pinch zoom,
+ * mouse pan/zoom, analytical combinatorial metrics, and high-res PNG/SVG export.
+ * Optimized for mobile touchscreens with adaptive screen-space LOD & rAF coalescing.
  */
 
 (() => {
@@ -1623,6 +1627,7 @@ details[open] .summary-arrow {
       zoom: 1
     },
     isDragging: false,
+    isInteracting: false,      // true during active touch pinch, pan, or mouse drag
     dragStart: { x: 0, y: 0 },
     cameraStart: { x: 0, y: 0 },
     animationTimer: null,
@@ -1747,6 +1752,7 @@ details[open] .summary-arrow {
   }
 
   // --- Real-Time Analytics Calculations ---
+  // Only called when depth or fractal type changes (NOT on every pan/zoom frame)
   function updateAnalytics() {
     const n = state.depth;
     const isTriangle = state.type === 'triangle';
@@ -1769,9 +1775,7 @@ details[open] .summary-arrow {
       dom.progressRemaining.style.width = `${Math.min(100, ((n + 1) / 8) * 100)}%`;
 
       // 3. Removed Shapes Count
-      // Newly removed in step n: 3^(n-1) if n >= 1, else 0
       const stepRemoved = n === 0 ? 0n : BigPow(3, n - 1);
-      // Cumulative removed: (3^n - 1) / 2
       const cumRemoved = (remBig - 1n) / 2n;
       const cumFormatted = formatBigNumber(cumRemoved);
       dom.badgeRemovedFormula.textContent = `(3ⁿ - 1) / 2`;
@@ -1844,9 +1848,7 @@ details[open] .summary-arrow {
       dom.progressRemaining.style.width = `${Math.min(100, ((n + 1) / 8) * 100)}%`;
 
       // 3. Removed Shapes Count
-      // Newly removed in step n: 8^(n-1) if n >= 1, else 0
       const stepRemoved = n === 0 ? 0n : BigPow(8, n - 1);
-      // Cumulative removed: (8^n - 1) / 7
       const cumRemoved = (remBig - 1n) / 7n;
       const cumFormatted = formatBigNumber(cumRemoved);
       dom.badgeRemovedFormula.textContent = `(8ⁿ - 1) / 7`;
@@ -1924,18 +1926,23 @@ details[open] .summary-arrow {
   }
 
   // --- Canvas Coordinate Space Transformations ---
+  // Cap devicePixelRatio to 2 to eliminate mobile 3x/4x GPU fill-rate exhaustion
+  function getEffectiveDPR() {
+    return Math.min(window.devicePixelRatio || 1, 2);
+  }
+
   function resizeCanvas() {
     const rect = dom.canvasViewport.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getEffectiveDPR();
     const w = Math.max(rect.width || 0, 400);
     const h = Math.max(rect.height || 0, 400);
     dom.canvas.width = Math.round(w * dpr);
     dom.canvas.height = Math.round(h * dpr);
-    render();
+    requestRender();
   }
 
   function worldToScreen(wx, wy) {
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getEffectiveDPR();
     const w = dom.canvas.width / dpr;
     const h = dom.canvas.height / dpr;
     return {
@@ -1945,7 +1952,7 @@ details[open] .summary-arrow {
   }
 
   function screenToWorld(sx, sy) {
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getEffectiveDPR();
     const w = dom.canvas.width / dpr;
     const h = dom.canvas.height / dpr;
     return {
@@ -1954,12 +1961,12 @@ details[open] .summary-arrow {
     };
   }
 
-  // --- Recursive Fractal Generators ---
+  // --- Recursive Fractal Generators with Adaptive Screen-Space LOD ---
 
   /**
    * Sierpiński Triangle Generator
    */
-  function renderSierpinskiTriangle(targetCtx, scale, offX, offY, viewWidth, viewHeight) {
+  function renderSierpinskiTriangle(targetCtx, scale, dpr, offX, offY, viewWidth, viewHeight, isInteractive) {
     const n = state.depth;
     const s = BASE_SIZE;
     const h = s * (Math.sqrt(3) / 2);
@@ -1969,8 +1976,10 @@ details[open] .summary-arrow {
     const p2 = { x: -s / 2, y: h / 3 };
     const p3 = { x: s / 2, y: h / 3 };
 
+    const pixelScale = scale * dpr;
+    const lodThreshold = isInteractive ? 1.6 : 0.75;
+
     if (state.mode === 'cutouts') {
-      // Cutouts mode: Draw big base triangle, then highlight excavated inverted triangles
       targetCtx.fillStyle = state.backgroundColor;
       targetCtx.beginPath();
       targetCtx.moveTo(p1.x, p1.y);
@@ -1982,7 +1991,7 @@ details[open] .summary-arrow {
       if (n > 0) {
         targetCtx.fillStyle = state.patternColor;
         targetCtx.beginPath();
-        drawTriangleHoles(targetCtx, p1, p2, p3, n);
+        drawTriangleHoles(targetCtx, p1, p2, p3, n, pixelScale, lodThreshold);
         targetCtx.fill();
       }
       return;
@@ -1990,7 +1999,7 @@ details[open] .summary-arrow {
 
     // Filled or Wireframe mode
     targetCtx.beginPath();
-    generateTriangles(targetCtx, p1, p2, p3, n, scale);
+    generateTriangles(targetCtx, p1, p2, p3, n, pixelScale, lodThreshold);
 
     if (state.mode === 'wireframe') {
       targetCtx.strokeStyle = state.patternColor;
@@ -2003,7 +2012,7 @@ details[open] .summary-arrow {
     }
   }
 
-  function generateTriangles(tCtx, a, b, c, depth, scale) {
+  function generateTriangles(tCtx, a, b, c, depth, pixelScale, lodThreshold) {
     if (depth === 0) {
       tCtx.moveTo(a.x, a.y);
       tCtx.lineTo(b.x, b.y);
@@ -2012,22 +2021,36 @@ details[open] .summary-arrow {
       return;
     }
 
-    // Midpoints
+    // Screen-space LOD: if the triangle edge is smaller than threshold device pixels, draw solid
+    const side = Math.hypot(b.x - a.x, b.y - a.y) * pixelScale;
+    if (side < lodThreshold) {
+      tCtx.moveTo(a.x, a.y);
+      tCtx.lineTo(b.x, b.y);
+      tCtx.lineTo(c.x, c.y);
+      tCtx.closePath();
+      return;
+    }
+
     const ab = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     const bc = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
     const ca = { x: (c.x + a.x) / 2, y: (c.y + a.y) / 2 };
 
-    generateTriangles(tCtx, a, ab, ca, depth - 1, scale);
-    generateTriangles(tCtx, ab, b, bc, depth - 1, scale);
-    generateTriangles(tCtx, ca, bc, c, depth - 1, scale);
+    generateTriangles(tCtx, a, ab, ca, depth - 1, pixelScale, lodThreshold);
+    generateTriangles(tCtx, ab, b, bc, depth - 1, pixelScale, lodThreshold);
+    generateTriangles(tCtx, ca, bc, c, depth - 1, pixelScale, lodThreshold);
   }
 
-  function drawTriangleHoles(tCtx, a, b, c, depth) {
+  function drawTriangleHoles(tCtx, a, b, c, depth, pixelScale, lodThreshold) {
     if (depth === 0) return;
 
     const ab = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     const bc = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
     const ca = { x: (c.x + a.x) / 2, y: (c.y + a.y) / 2 };
+
+    const side = Math.hypot(bc.x - ab.x, bc.y - ab.y) * pixelScale;
+    if (side < lodThreshold) {
+      return;
+    }
 
     // Inverted center hole
     tCtx.moveTo(ab.x, ab.y);
@@ -2035,18 +2058,18 @@ details[open] .summary-arrow {
     tCtx.lineTo(ca.x, ca.y);
     tCtx.closePath();
 
-    drawTriangleHoles(tCtx, a, ab, ca, depth - 1);
-    drawTriangleHoles(tCtx, ab, b, bc, depth - 1);
-    drawTriangleHoles(tCtx, ca, bc, c, depth - 1);
+    drawTriangleHoles(tCtx, a, ab, ca, depth - 1, pixelScale, lodThreshold);
+    drawTriangleHoles(tCtx, ab, b, bc, depth - 1, pixelScale, lodThreshold);
+    drawTriangleHoles(tCtx, ca, bc, c, depth - 1, pixelScale, lodThreshold);
   }
 
   /**
    * Sierpiński Carpet Generator
    * Highly optimized:
    * - Filled mode draws solid base, then excises removed squares in batched fillRect
-   * - Viewport Frustum Culling + Screen Pixel LOD avoids recursing sub-pixels (< 0.35px)
+   * - Viewport Frustum Culling + Device-Pixel LOD avoids recursing invisible sub-pixels
    */
-  function renderSierpinskiCarpet(targetCtx, scale, offX, offY, viewWidth, viewHeight) {
+  function renderSierpinskiCarpet(targetCtx, scale, dpr, offX, offY, viewWidth, viewHeight, isInteractive) {
     const n = state.depth;
     const s = BASE_SIZE;
     const halfS = s / 2;
@@ -2057,26 +2080,29 @@ details[open] .summary-arrow {
     const minY = offY - (viewHeight / 2) / scale;
     const maxY = offY + (viewHeight / 2) / scale;
 
+    const pixelScale = scale * dpr;
+    // During active gesture (drag / 2-finger pinch), use 1.6px for guaranteed 60 FPS
+    // When resting / static, use 0.75px for crisp sub-pixel detail
+    const lodThreshold = isInteractive ? 1.6 : 0.75;
+
     if (state.mode === 'cutouts') {
-      // Cutouts mode: background base, then highlight all excavated voids
       targetCtx.fillStyle = state.backgroundColor;
       targetCtx.fillRect(-halfS, -halfS, s, s);
 
       if (n > 0) {
         targetCtx.fillStyle = state.patternColor;
-        drawCarpetCutouts(targetCtx, -halfS, -halfS, s, n, scale, minX, maxX, minY, maxY);
+        drawCarpetCutouts(targetCtx, -halfS, -halfS, s, n, pixelScale, lodThreshold, minX, maxX, minY, maxY);
       }
       return;
     }
 
     if (state.mode === 'wireframe') {
-      // Wireframe mode: stroke the perimeter and recursive cuts
       targetCtx.strokeStyle = state.patternColor;
       targetCtx.lineWidth = Math.max(1 / scale, 1.2);
       targetCtx.strokeRect(-halfS, -halfS, s, s);
 
       if (n > 0) {
-        drawCarpetWireframe(targetCtx, -halfS, -halfS, s, n, scale, minX, maxX, minY, maxY);
+        drawCarpetWireframe(targetCtx, -halfS, -halfS, s, n, pixelScale, lodThreshold, minX, maxX, minY, maxY);
       }
       return;
     }
@@ -2090,17 +2116,17 @@ details[open] .summary-arrow {
 
     // 2. Punch out the removed center squares using background color
     targetCtx.fillStyle = state.backgroundColor;
-    drawCarpetHoles(targetCtx, -halfS, -halfS, s, n, scale, minX, maxX, minY, maxY);
+    drawCarpetHoles(targetCtx, -halfS, -halfS, s, n, pixelScale, lodThreshold, minX, maxX, minY, maxY);
   }
 
-  function drawCarpetHoles(tCtx, x, y, size, depth, scale, minX, maxX, minY, maxY) {
+  function drawCarpetHoles(tCtx, x, y, size, depth, pixelScale, lodThreshold, minX, maxX, minY, maxY) {
     // Frustum cull
     if (x > maxX || x + size < minX || y > maxY || y + size < minY) {
       return;
     }
 
-    // Screen-space LOD threshold
-    if (size * scale < 0.35) {
+    // Screen-space LOD threshold in physical device pixels
+    if (size * pixelScale < lodThreshold) {
       return;
     }
 
@@ -2111,62 +2137,73 @@ details[open] .summary-arrow {
 
     if (depth > 1) {
       const nextDepth = depth - 1;
-      // 8 surrounding squares
-      drawCarpetHoles(tCtx, x,           y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetHoles(tCtx, x + sub,     y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetHoles(tCtx, x + 2 * sub, y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetHoles(tCtx, x,           y + sub,     sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetHoles(tCtx, x + 2 * sub, y + sub,     sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetHoles(tCtx, x,           y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetHoles(tCtx, x + sub,     y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetHoles(tCtx, x + 2 * sub, y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x,           y,           sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x + sub,     y,           sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x + 2 * sub, y,           sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x,           y + sub,     sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x + 2 * sub, y + sub,     sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x,           y + 2 * sub, sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x + sub,     y + 2 * sub, sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x + 2 * sub, y + 2 * sub, sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
     }
   }
 
-  function drawCarpetWireframe(tCtx, x, y, size, depth, scale, minX, maxX, minY, maxY) {
+  function drawCarpetWireframe(tCtx, x, y, size, depth, pixelScale, lodThreshold, minX, maxX, minY, maxY) {
     if (x > maxX || x + size < minX || y > maxY || y + size < minY) return;
-    if (size * scale < 1.0) return;
+    if (size * pixelScale < lodThreshold * 1.5) return;
 
     const sub = size / 3;
     tCtx.strokeRect(x + sub, y + sub, sub, sub);
 
     if (depth > 1) {
       const nextDepth = depth - 1;
-      drawCarpetWireframe(tCtx, x,           y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetWireframe(tCtx, x + sub,     y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetWireframe(tCtx, x + 2 * sub, y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetWireframe(tCtx, x,           y + sub,     sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetWireframe(tCtx, x + 2 * sub, y + sub,     sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetWireframe(tCtx, x,           y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetWireframe(tCtx, x + sub,     y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetWireframe(tCtx, x + 2 * sub, y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x,           y,           sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x + sub,     y,           sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x + 2 * sub, y,           sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x,           y + sub,     sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x + 2 * sub, y + sub,     sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x,           y + 2 * sub, sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x + sub,     y + 2 * sub, sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x + 2 * sub, y + 2 * sub, sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
     }
   }
 
-  function drawCarpetCutouts(tCtx, x, y, size, depth, scale, minX, maxX, minY, maxY) {
+  function drawCarpetCutouts(tCtx, x, y, size, depth, pixelScale, lodThreshold, minX, maxX, minY, maxY) {
     if (x > maxX || x + size < minX || y > maxY || y + size < minY) return;
-    if (size * scale < 0.35) return;
+    if (size * pixelScale < lodThreshold) return;
 
     const sub = size / 3;
     tCtx.fillRect(x + sub, y + sub, sub, sub);
 
     if (depth > 1) {
       const nextDepth = depth - 1;
-      drawCarpetCutouts(tCtx, x,           y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetCutouts(tCtx, x + sub,     y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetCutouts(tCtx, x + 2 * sub, y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetCutouts(tCtx, x,           y + sub,     sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetCutouts(tCtx, x + 2 * sub, y + sub,     sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetCutouts(tCtx, x,           y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetCutouts(tCtx, x + sub,     y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
-      drawCarpetCutouts(tCtx, x + 2 * sub, y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x,           y,           sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x + sub,     y,           sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x + 2 * sub, y,           sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x,           y + sub,     sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x + 2 * sub, y + sub,     sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x,           y + 2 * sub, sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x + sub,     y + 2 * sub, sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x + 2 * sub, y + 2 * sub, sub, nextDepth, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+    }
+  }
+
+  // --- requestAnimationFrame Coalescing Pipeline ---
+  let renderPending = false;
+  function requestRender() {
+    if (!renderPending) {
+      renderPending = true;
+      requestAnimationFrame(() => {
+        render();
+        renderPending = false;
+      });
     }
   }
 
   // --- Main Render Pipeline ---
   function render() {
     const tStart = performance.now();
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getEffectiveDPR();
     const w = dom.canvas.width;
     const h = dom.canvas.height;
     const cssW = w / dpr;
@@ -2186,11 +2223,13 @@ details[open] .summary-arrow {
     ctx.scale(state.camera.zoom, state.camera.zoom);
     ctx.translate(-state.camera.x, -state.camera.y);
 
+    const isInteractive = state.isInteracting;
+
     // Render active fractal
     if (state.type === 'triangle') {
-      renderSierpinskiTriangle(ctx, state.camera.zoom, state.camera.x, state.camera.y, cssW, cssH);
+      renderSierpinskiTriangle(ctx, state.camera.zoom, dpr, state.camera.x, state.camera.y, cssW, cssH, isInteractive);
     } else {
-      renderSierpinskiCarpet(ctx, state.camera.zoom, state.camera.x, state.camera.y, cssW, cssH);
+      renderSierpinskiCarpet(ctx, state.camera.zoom, dpr, state.camera.x, state.camera.y, cssW, cssH, isInteractive);
     }
 
     ctx.restore();
@@ -2200,8 +2239,6 @@ details[open] .summary-arrow {
     dom.hudRenderTime.textContent = `Render: ${elapsed < 1 ? elapsed.toFixed(2) : elapsed.toFixed(1)}ms`;
     dom.hudZoomText.textContent = `${Math.round(state.camera.zoom * 100)}%`;
     dom.hudFractalName.textContent = state.type === 'triangle' ? 'Sierpiński Triangle' : 'Sierpiński Carpet';
-
-    updateAnalytics();
   }
 
   // --- Viewport & Camera Interaction Handlers ---
@@ -2209,7 +2246,7 @@ details[open] .summary-arrow {
     state.camera.x = 0;
     state.camera.y = 0;
     state.camera.zoom = 1;
-    render();
+    requestRender();
   }
 
   function adjustZoom(factor, clientX, clientY) {
@@ -2226,41 +2263,163 @@ details[open] .summary-arrow {
     state.camera.x += (worldBefore.x - worldAfter.x);
     state.camera.y += (worldBefore.y - worldAfter.y);
 
-    render();
+    requestRender();
   }
 
+  // Mouse wheel zoom (desktop)
   dom.canvasViewport.addEventListener('wheel', (e) => {
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
     adjustZoom(zoomFactor, e.clientX, e.clientY);
   }, { passive: false });
 
+  // --- Touch Multi-Gesture Engine (Phones & Tablets) ---
+  const touchState = {
+    prevDist: 0,
+    prevMidX: 0,
+    prevMidY: 0,
+    lastTouchX: 0,
+    lastTouchY: 0,
+    lastTapTime: 0
+  };
+
+  function getTouchDistance(t1, t2) {
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    return Math.hypot(dx, dy);
+  }
+
+  function getTouchMidpoint(t1, t2) {
+    return {
+      x: (t1.clientX + t2.clientX) / 2,
+      y: (t1.clientY + t2.clientY) / 2
+    };
+  }
+
+  dom.canvasViewport.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    state.isInteracting = true;
+
+    if (e.touches.length === 1) {
+      // 1 Finger: start single-finger pan
+      touchState.lastTouchX = e.touches[0].clientX;
+      touchState.lastTouchY = e.touches[0].clientY;
+      touchState.prevDist = 0;
+
+      // Double-tap detection to reset camera
+      const now = performance.now();
+      if (now - touchState.lastTapTime < 300) {
+        resetCamera();
+        touchState.lastTapTime = 0;
+        return;
+      }
+      touchState.lastTapTime = now;
+
+    } else if (e.touches.length === 2) {
+      // 2 Fingers: initialize pinch distance and midpoint
+      touchState.prevDist = getTouchDistance(e.touches[0], e.touches[1]);
+      const mid = getTouchMidpoint(e.touches[0], e.touches[1]);
+      touchState.prevMidX = mid.x;
+      touchState.prevMidY = mid.y;
+    }
+  }, { passive: false });
+
+  dom.canvasViewport.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (!state.isInteracting) return;
+
+    if (e.touches.length === 1) {
+      // Single-finger drag / pan
+      const tx = e.touches[0].clientX;
+      const ty = e.touches[0].clientY;
+      const dx = (tx - touchState.lastTouchX) / state.camera.zoom;
+      const dy = (ty - touchState.lastTouchY) / state.camera.zoom;
+      state.camera.x -= dx;
+      state.camera.y -= dy;
+      touchState.lastTouchX = tx;
+      touchState.lastTouchY = ty;
+      requestRender();
+
+    } else if (e.touches.length === 2) {
+      // Two-finger pinch-to-zoom & simultaneous pan
+      const dist = getTouchDistance(e.touches[0], e.touches[1]);
+      const mid = getTouchMidpoint(e.touches[0], e.touches[1]);
+
+      if (touchState.prevDist > 0 && dist > 0) {
+        const zoomFactor = dist / touchState.prevDist;
+
+        const rect = dom.canvasViewport.getBoundingClientRect();
+        const sx = mid.x - rect.left;
+        const sy = mid.y - rect.top;
+
+        const worldBefore = screenToWorld(sx, sy);
+        const newZoom = Math.min(Math.max(state.camera.zoom * zoomFactor, 0.1), 500);
+        state.camera.zoom = newZoom;
+        const worldAfter = screenToWorld(sx, sy);
+
+        // Pan with midpoint translation
+        const dMidX = (mid.x - touchState.prevMidX) / state.camera.zoom;
+        const dMidY = (mid.y - touchState.prevMidY) / state.camera.zoom;
+
+        state.camera.x += (worldBefore.x - worldAfter.x) - dMidX;
+        state.camera.y += (worldBefore.y - worldAfter.y) - dMidY;
+
+        requestRender();
+      }
+
+      touchState.prevDist = dist;
+      touchState.prevMidX = mid.x;
+      touchState.prevMidY = mid.y;
+    }
+  }, { passive: false });
+
+  const handleTouchEnd = (e) => {
+    if (e.touches.length === 1) {
+      // Seamless transition from 2 fingers to 1 finger without jump
+      touchState.lastTouchX = e.touches[0].clientX;
+      touchState.lastTouchY = e.touches[0].clientY;
+      touchState.prevDist = 0;
+    } else if (e.touches.length === 0) {
+      // All fingers lifted: return to full fidelity
+      state.isInteracting = false;
+      touchState.prevDist = 0;
+      requestRender();
+    }
+  };
+
+  dom.canvasViewport.addEventListener('touchend', handleTouchEnd, { passive: true });
+  dom.canvasViewport.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+  // --- Desktop Mouse Pointer Handlers ---
   dom.canvasViewport.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return; // primary mouse button only
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
     state.isDragging = true;
+    state.isInteracting = true;
     state.dragStart = { x: e.clientX, y: e.clientY };
     state.cameraStart = { x: state.camera.x, y: state.camera.y };
     dom.canvasViewport.setPointerCapture(e.pointerId);
   });
 
   dom.canvasViewport.addEventListener('pointermove', (e) => {
-    if (!state.isDragging) return;
+    if (e.pointerType !== 'mouse' || !state.isDragging) return;
     const dx = (e.clientX - state.dragStart.x) / state.camera.zoom;
     const dy = (e.clientY - state.dragStart.y) / state.camera.zoom;
     state.camera.x = state.cameraStart.x - dx;
     state.camera.y = state.cameraStart.y - dy;
-    render();
+    requestRender();
   });
 
-  const endDrag = (e) => {
-    if (state.isDragging) {
+  const endMouseDrag = (e) => {
+    if (e.pointerType === 'mouse' && state.isDragging) {
       state.isDragging = false;
+      state.isInteracting = false;
       try { dom.canvasViewport.releasePointerCapture(e.pointerId); } catch (_) {}
+      requestRender();
     }
   };
 
-  dom.canvasViewport.addEventListener('pointerup', endDrag);
-  dom.canvasViewport.addEventListener('pointercancel', endDrag);
+  dom.canvasViewport.addEventListener('pointerup', endMouseDrag);
+  dom.canvasViewport.addEventListener('pointercancel', endMouseDrag);
   dom.canvasViewport.addEventListener('dblclick', resetCamera);
 
   dom.btnZoomIn.addEventListener('click', () => adjustZoom(1.25));
@@ -2274,7 +2433,8 @@ details[open] .summary-arrow {
     state.depth = clamped;
     dom.sliderDepth.value = clamped;
     dom.inputDepth.value = clamped;
-    render();
+    updateAnalytics();
+    requestRender();
   }
 
   dom.sliderDepth.addEventListener('input', (e) => setDepth(e.target.value));
@@ -2290,6 +2450,7 @@ details[open] .summary-arrow {
     dom.btnTypeCarpet.classList.toggle('active', type === 'carpet');
     dom.btnTypeCarpet.setAttribute('aria-checked', type === 'carpet');
 
+    updateAnalytics();
     resetCamera();
   }
 
@@ -2304,7 +2465,7 @@ details[open] .summary-arrow {
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-checked', active);
     });
-    render();
+    requestRender();
   }
 
   dom.btnModeFilled.addEventListener('click', () => setRenderMode('filled'));
@@ -2319,7 +2480,7 @@ details[open] .summary-arrow {
     dom.colorBackground.value = bg;
     dom.colorPatternHex.textContent = pattern.toUpperCase();
     dom.colorBackgroundHex.textContent = bg.toUpperCase();
-    render();
+    requestRender();
   }
 
   dom.colorPattern.addEventListener('input', (e) => {
@@ -2403,9 +2564,9 @@ details[open] .summary-arrow {
     expCtx.scale(exportScale, exportScale);
 
     if (state.type === 'triangle') {
-      renderSierpinskiTriangle(expCtx, exportScale, 0, 0, size, size);
+      renderSierpinskiTriangle(expCtx, exportScale, 1, 0, 0, size, size, false);
     } else {
-      renderSierpinskiCarpet(expCtx, exportScale, 0, 0, size, size);
+      renderSierpinskiCarpet(expCtx, exportScale, 1, 0, 0, size, size, false);
     }
     expCtx.restore();
 
@@ -2560,12 +2721,13 @@ details[open] .summary-arrow {
   window.addEventListener('resize', resizeCanvas);
   window.addEventListener('DOMContentLoaded', () => {
     initTheme();
-    resizeCanvas();
     updateAnalytics();
+    resizeCanvas();
   });
 
-  // Immediate first pass
+  // Immediate initial render pass
   initTheme();
+  updateAnalytics();
   resizeCanvas();
 })();
 
