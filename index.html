@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sierpiński Fractal Explorer & Analytical Dashboard</title>
+  <meta name="description" content="Simulate, visualize, and mathematically analyze the Sierpiński Triangle and Sierpiński Carpet fractals with real-time analytics.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- TOP HEADER -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon" aria-hidden="true">
+          <svg viewBox="0 0 40 40" width="32" height="32">
+            <polygon points="20,4 36,36 4,36" fill="none" stroke="currentColor" stroke-width="2.5"/>
+            <polygon points="20,36 28,20 12,20" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Sierpiński <span class="gradient-text">Fractal Studio</span></h1>
+          <p class="subtitle">Recursive Geometry Simulation &amp; Real-Time Mathematical Analysis</p>
+        </div>
+      </div>
+
+      <!-- FRACTAL TYPE SWITCHER -->
+      <div class="type-switcher-wrapper">
+        <div class="type-switcher" role="radiogroup" aria-label="Select Fractal Type">
+          <button type="button" id="btnTypeTriangle" class="type-btn active" role="radio" aria-checked="true" data-type="triangle">
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+              <polygon points="10,2 19,18 1,18" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span>Sierpiński Triangle</span>
+          </button>
+          <button type="button" id="btnTypeCarpet" class="type-btn" role="radio" aria-checked="false" data-type="carpet">
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+              <rect x="2" y="2" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"/>
+              <rect x="7" y="7" width="6" height="6" fill="currentColor"/>
+            </svg>
+            <span>Sierpiński Carpet</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- HEADER ACTIONS -->
+      <div class="header-actions">
+        <button type="button" id="btnResetView" class="icon-btn" title="Reset Pan & Zoom (Home View)" aria-label="Reset View">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+        <button type="button" id="btnThemeToggle" class="icon-btn theme-toggle" title="Toggle Light / Dark Theme" aria-label="Toggle Theme">
+          <svg class="sun-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="dashboard-grid">
+      <!-- SIDEBAR CONTROLS -->
+      <aside class="controls-panel card">
+        <div class="panel-section-header">
+          <h2>Simulation Controls</h2>
+          <span class="badge" id="badgeComplexity">Active</span>
+        </div>
+
+        <!-- ITERATION DEPTH -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="sliderDepth">
+              Iteration Depth (<span class="math-sym">n</span>)
+            </label>
+            <div class="depth-input-container">
+              <input type="number" id="inputDepth" min="0" max="7" value="3" aria-label="Iteration depth numeric input">
+            </div>
+          </div>
+          <div class="slider-wrapper">
+            <input type="range" id="sliderDepth" min="0" max="7" step="1" value="3" aria-label="Iteration depth slider">
+            <div class="slider-ticks">
+              <span>0</span>
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+              <span>4</span>
+              <span>5</span>
+              <span>6</span>
+              <span class="warning-tick">7</span>
+            </div>
+          </div>
+          <!-- Warning banner for n >= 6 -->
+          <div id="depthWarning" class="depth-warning hidden" role="alert">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+              <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+            </svg>
+            <span id="depthWarningText"><strong>High Complexity Notice:</strong> Rendering up to millions of sub-elements. Hardware acceleration active.</span>
+          </div>
+        </div>
+
+        <!-- RENDER STYLE TOGGLE -->
+        <div class="control-group">
+          <label class="section-sublabel">Render Mode</label>
+          <div class="segmented-control" role="radiogroup" aria-label="Render Mode">
+            <button type="button" class="segment-btn active" id="btnModeFilled" role="radio" aria-checked="true" data-mode="filled">
+              <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor"><rect x="3" y="3" width="14" height="14" rx="2"/></svg>
+              Filled
+            </button>
+            <button type="button" class="segment-btn" id="btnModeWireframe" role="radio" aria-checked="false" data-mode="wireframe">
+              <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="14" height="14" rx="2"/></svg>
+              Wireframe
+            </button>
+            <button type="button" class="segment-btn" id="btnModeCutouts" role="radio" aria-checked="false" data-mode="cutouts" title="Emphasize removed central voids">
+              <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="7"/></svg>
+              Cutouts
+            </button>
+          </div>
+        </div>
+
+        <!-- COLOR PICKERS -->
+        <div class="control-group">
+          <label class="section-sublabel">Palette &amp; Colors</label>
+          <div class="color-pickers-grid">
+            <div class="color-picker-item">
+              <span class="color-label">Pattern Area</span>
+              <div class="color-input-wrapper">
+                <input type="color" id="colorPattern" value="#6366f1" aria-label="Pattern color">
+                <span class="color-hex-text" id="colorPatternHex">#6366F1</span>
+              </div>
+            </div>
+            <div class="color-picker-item">
+              <span class="color-label">Removed Area</span>
+              <div class="color-input-wrapper">
+                <input type="color" id="colorBackground" value="#0f172a" aria-label="Background / Removed area color">
+                <span class="color-hex-text" id="colorBackgroundHex">#0F172A</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Color presets -->
+          <div class="preset-palettes">
+            <span class="preset-title">Presets:</span>
+            <div class="preset-chips">
+              <button type="button" class="preset-chip active" data-pattern="#6366f1" data-bg="#0f172a" title="Indigo & Dark Slate">
+                <span class="swatch" style="background:#6366f1;"></span>
+                <span class="swatch" style="background:#0f172a;"></span>
+                <span>Indigo</span>
+              </button>
+              <button type="button" class="preset-chip" data-pattern="#06b6d4" data-bg="#051923" title="Electric Cyan & Abyss">
+                <span class="swatch" style="background:#06b6d4;"></span>
+                <span class="swatch" style="background:#051923;"></span>
+                <span>Cyan</span>
+              </button>
+              <button type="button" class="preset-chip" data-pattern="#f43f5e" data-bg="#180c14" title="Sunset Rose & Crimson Void">
+                <span class="swatch" style="background:#f43f5e;"></span>
+                <span class="swatch" style="background:#180c14;"></span>
+                <span>Rose</span>
+              </button>
+              <button type="button" class="preset-chip" data-pattern="#10b981" data-bg="#022c22" title="Emerald Matrix">
+                <span class="swatch" style="background:#10b981;"></span>
+                <span class="swatch" style="background:#022c22;"></span>
+                <span>Emerald</span>
+              </button>
+              <button type="button" class="preset-chip" data-pattern="#f59e0b" data-bg="#1c1917" title="Amber Gold">
+                <span class="swatch" style="background:#f59e0b;"></span>
+                <span class="swatch" style="background:#1c1917;"></span>
+                <span>Amber</span>
+              </button>
+              <button type="button" class="preset-chip" data-pattern="#2563eb" data-bg="#f8fafc" title="Azure & Clean White">
+                <span class="swatch" style="background:#2563eb;"></span>
+                <span class="swatch" style="background:#f8fafc;"></span>
+                <span>Azure Light</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROGRESSIVE ANIMATION PLAYBACK -->
+        <div class="control-group">
+          <label class="section-sublabel">Step-by-Step Evolution</label>
+          <div class="animation-buttons">
+            <button type="button" id="btnPlayAnimation" class="btn btn-secondary" title="Play progressive iterations from 0 to current depth">
+              <svg id="iconPlay" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              <svg id="iconPause" class="hidden" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16"/>
+                <rect x="14" y="4" width="4" height="16"/>
+              </svg>
+              <span id="labelPlay">Play Evolution</span>
+            </button>
+            <button type="button" id="btnStepPrev" class="btn btn-icon-only" title="Previous depth (n - 1)" aria-label="Previous step">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button type="button" id="btnStepNext" class="btn btn-icon-only" title="Next depth (n + 1)" aria-label="Next step">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- EXPORT ACTIONS -->
+        <div class="control-group export-section">
+          <label class="section-sublabel">Export Fractal</label>
+          <div class="export-buttons-grid">
+            <button type="button" id="btnExportPNG" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Export PNG (High-Res)</span>
+            </button>
+            <button type="button" id="btnExportSVG" class="btn btn-outline" title="Export as scalable vector graphic">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="9"/>
+                <polygon points="12 8 16 16 8 16"/>
+              </svg>
+              <span>Export SVG</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- VISUALIZER CANVAS AREA -->
+      <section class="visualizer-container card" aria-label="Fractal Visualizer">
+        <!-- Floating HUD Overlays -->
+        <div class="canvas-hud top-left">
+          <span class="hud-tag" id="hudFractalName">Sierpiński Triangle</span>
+          <span class="hud-metric" id="hudRenderTime">Render: 0ms</span>
+        </div>
+
+        <div class="canvas-hud top-right">
+          <div class="zoom-controls">
+            <button type="button" id="btnZoomIn" class="hud-btn" title="Zoom In (+)" aria-label="Zoom In">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <span class="zoom-level-text" id="hudZoomText">100%</span>
+            <button type="button" id="btnZoomOut" class="hud-btn" title="Zoom Out (-)" aria-label="Zoom Out">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button type="button" id="btnRecenter" class="hud-btn" title="Recenter View" aria-label="Recenter">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Canvas -->
+        <div class="canvas-viewport" id="canvasViewport">
+          <canvas id="fractalCanvas" width="800" height="800"></canvas>
+          <div class="canvas-hint" id="canvasHint">
+            <span>Scroll to zoom &bull; Drag to pan &bull; Double-click to reset</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANALYTICAL DASHBOARD METRIC CARDS -->
+      <section class="analytics-container card" aria-label="Analytical Dashboard">
+        <div class="analytics-header">
+          <div class="analytics-title">
+            <h2>Real-Time Mathematical Analytics</h2>
+            <p>Exact combinatorial counts, geometric proportions, and fractal invariants at iteration level <span class="math-highlight" id="lblCurrentN">n = 3</span>.</p>
+          </div>
+          <div class="fractal-formula-pill" id="pillDimensionFormula">
+            <span class="pill-label">Hausdorff Dimension:</span>
+            <span class="pill-val" id="valHausdorffSummary">D = log(3) / log(2) ≈ 1.5850</span>
+          </div>
+        </div>
+
+        <div class="metrics-grid">
+          <!-- CARD 1: Iteration Depth -->
+          <div class="metric-card">
+            <div class="metric-card-header">
+              <span class="metric-label">Iteration Level</span>
+              <span class="metric-badge">n</span>
+            </div>
+            <div class="metric-value" id="metricDepth">3</div>
+            <div class="metric-formula" id="metricDepthFormula">Base recursion level</div>
+            <div class="metric-footer">
+              <span class="subtext">Scale factor per step: <strong id="metricScaleFactor">1/2 (50%)</strong></span>
+            </div>
+          </div>
+
+          <!-- CARD 2: Remaining Shapes Count -->
+          <div class="metric-card highlight">
+            <div class="metric-card-header">
+              <span class="metric-label">Remaining Shapes Count</span>
+              <span class="metric-badge" id="badgeRemainingFormula">N(n) = 3ⁿ</span>
+            </div>
+            <div class="metric-value-container">
+              <div class="metric-value" id="metricRemainingCount">27</div>
+              <div class="metric-sci" id="metricRemainingSci"></div>
+            </div>
+            <div class="metric-formula" id="metricRemainingDesc">Number of colored self-similar copies</div>
+            <div class="metric-progress-bar">
+              <div class="metric-progress-fill" id="progressRemaining"></div>
+            </div>
+          </div>
+
+          <!-- CARD 3: Removed Shapes Count -->
+          <div class="metric-card">
+            <div class="metric-card-header">
+              <span class="metric-label">Removed Shapes (Excavated)</span>
+              <span class="metric-badge" id="badgeRemovedFormula">Cumulative</span>
+            </div>
+            <div class="metric-value-container">
+              <div class="metric-value" id="metricRemovedCumulative">13</div>
+              <div class="metric-sci" id="metricRemovedSci"></div>
+            </div>
+            <div class="metric-formula" id="metricRemovedFormula">Formula: (3ⁿ - 1) / 2</div>
+            <div class="metric-footer">
+              <span class="subtext">Newly removed in step n: <strong id="metricRemovedStep">9</strong></span>
+            </div>
+          </div>
+
+          <!-- CARD 4: Colored Area -->
+          <div class="metric-card">
+            <div class="metric-card-header">
+              <span class="metric-label">Remaining Colored Area</span>
+              <span class="metric-badge" id="badgeColoredAreaFormula">(3/4)ⁿ</span>
+            </div>
+            <div class="metric-value-container">
+              <div class="metric-value accent-colored" id="metricColoredPct">42.19%</div>
+              <div class="metric-fraction" id="metricColoredFraction">Fraction: 27 / 64</div>
+            </div>
+            <div class="metric-formula">Theoretical area ratio vs original geometry</div>
+            <div class="metric-progress-bar">
+              <div class="metric-progress-fill colored" id="progressColoredArea" style="width: 42.19%;"></div>
+            </div>
+          </div>
+
+          <!-- CARD 5: Removed / White Area -->
+          <div class="metric-card">
+            <div class="metric-card-header">
+              <span class="metric-label">White / Removed Area</span>
+              <span class="metric-badge" id="badgeRemovedAreaFormula">1 - (3/4)ⁿ</span>
+            </div>
+            <div class="metric-value-container">
+              <div class="metric-value accent-removed" id="metricRemovedPct">57.81%</div>
+              <div class="metric-fraction" id="metricRemovedFraction">Fraction: 37 / 64</div>
+            </div>
+            <div class="metric-formula">Cumulative void area excavated from seed</div>
+            <div class="metric-progress-bar">
+              <div class="metric-progress-fill removed" id="progressRemovedArea" style="width: 57.81%;"></div>
+            </div>
+          </div>
+
+          <!-- CARD 6: Hausdorff Dimension & Fractal Paradox -->
+          <div class="metric-card">
+            <div class="metric-card-header">
+              <span class="metric-label">Hausdorff Dimension</span>
+              <span class="metric-badge">DH</span>
+            </div>
+            <div class="metric-value-container">
+              <div class="metric-value" id="metricDimension">1.5850</div>
+              <div class="metric-sci" id="metricDimensionFormula">log(3) / log(2)</div>
+            </div>
+            <div class="metric-formula" id="metricDimensionDetail">
+              Fractional dimension strictly between 1D and 2D.
+            </div>
+            <div class="metric-footer">
+              <span class="subtext">As n &rarr; &infin;: Area &rarr; <strong>0</strong>, Boundary &rarr; <strong>&infin;</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MATHEMATICAL DEEP DIVE EXPANDER -->
+        <div class="math-explainer-card">
+          <details id="detailsMath">
+            <summary>
+              <span class="explainer-title">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                Mathematical Derivations &amp; Theoretical Paradox
+              </span>
+              <span class="summary-arrow">&darr;</span>
+            </summary>
+            <div class="explainer-content" id="explainerContent">
+              <!-- Dynamically populated based on active fractal -->
+            </div>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <div class="footer-inner">
+        <span>Sierpiński Fractal Explorer &bull; Pure Client-Side HTML5 Canvas &amp; Vector SVG</span>
+        <span class="footer-links">
+          <span>Self-Similar Dimension Simulator</span>
+        </span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

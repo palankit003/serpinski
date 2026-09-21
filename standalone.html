@@ -1,0 +1,2574 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sierpiński Fractal Explorer & Analytical Dashboard</title>
+  <meta name="description" content="Simulate, visualize, and mathematically analyze the Sierpiński Triangle and Sierpiński Carpet fractals with real-time analytics.">
+  <style>
+/* ==========================================================================
+   Sierpiński Fractal Explorer - Modern Dashboard Design System
+   ========================================================================== */
+
+:root {
+  /* Color Tokens - Dark Mode (Default) */
+  --bg-app: #080c15;
+  --bg-surface: #0f1626;
+  --bg-surface-elevated: #162035;
+  --bg-surface-hover: #1c2842;
+  --bg-input: #151e30;
+  
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.16);
+  --border-active: #6366f1;
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --accent-primary: #6366f1;
+  --accent-primary-hover: #4f46e5;
+  --accent-primary-glow: rgba(99, 102, 241, 0.35);
+  
+  --accent-cyan: #06b6d4;
+  --accent-cyan-glow: rgba(6, 182, 212, 0.25);
+  --accent-amber: #f59e0b;
+  --accent-amber-glow: rgba(245, 158, 11, 0.25);
+  --accent-rose: #f43f5e;
+  --accent-emerald: #10b981;
+  
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 24px var(--accent-primary-glow);
+  
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+  
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] {
+  --bg-app: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #f8fafc;
+  --bg-surface-hover: #e2e8f0;
+  --bg-input: #f1f5f9;
+  
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-medium: rgba(0, 0, 0, 0.14);
+  --border-active: #4f46e5;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  
+  --accent-primary: #4f46e5;
+  --accent-primary-hover: #4338ca;
+  --accent-primary-glow: rgba(79, 70, 229, 0.2);
+  
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 6px 18px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.15);
+}
+
+/* Base Reset & Typography */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  min-height: 100%;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+/* App Container Layout */
+.app-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 16px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  gap: 20px;
+}
+
+/* Header Component */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 14px 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 12px;
+  z-index: 100;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(6, 182, 212, 0.2));
+  color: var(--accent-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-medium);
+}
+
+.brand-text h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8 0%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* Type Switcher Segmented Control */
+.type-switcher-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.type-switcher {
+  display: inline-flex;
+  background: var(--bg-input);
+  padding: 4px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  gap: 4px;
+}
+
+.type-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.type-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.type-btn.active {
+  background: var(--accent-primary);
+  color: #ffffff;
+  box-shadow: 0 2px 10px var(--accent-primary-glow);
+}
+
+/* Header Actions */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.icon-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+
+/* Theme Toggle Icons */
+[data-theme="dark"] .theme-toggle .sun-icon { display: block; }
+[data-theme="dark"] .theme-toggle .moon-icon { display: none; }
+[data-theme="light"] .theme-toggle .sun-icon { display: none; }
+[data-theme="light"] .theme-toggle .moon-icon { display: block; }
+
+/* Dashboard Grid Layout */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  grid-template-rows: auto auto;
+  gap: 20px;
+  grid-template-areas:
+    "controls visualizer"
+    "controls analytics";
+}
+
+/* General Card Styling */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  transition: border-color var(--transition-fast);
+}
+
+.card:hover {
+  border-color: var(--border-medium);
+}
+
+/* ==========================================================================
+   Sidebar Controls Panel
+   ========================================================================== */
+.controls-panel {
+  grid-area: controls;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 92px;
+  height: fit-content;
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-medium) transparent;
+}
+
+.controls-panel::-webkit-scrollbar {
+  width: 6px;
+}
+.controls-panel::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 4px;
+}
+
+.panel-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.panel-section-header h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.badge.warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-amber);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.control-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.control-label-row label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.section-sublabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.math-sym {
+  font-family: var(--font-mono);
+  font-style: italic;
+  color: var(--accent-primary);
+}
+
+/* Numeric input for depth */
+.depth-input-container input {
+  width: 54px;
+  height: 32px;
+  text-align: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.depth-input-container input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-primary-glow);
+}
+
+/* Custom Range Slider */
+.slider-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-input);
+  outline: none;
+  cursor: pointer;
+  border: 1px solid var(--border-subtle);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-primary-glow);
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  transition: transform var(--transition-fast);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-primary-glow);
+  cursor: pointer;
+  border: 2px solid #ffffff;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 2px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.warning-tick {
+  color: var(--accent-amber);
+  font-weight: 600;
+}
+
+/* Depth Warning Box */
+.depth-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--accent-amber);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  animation: fadeIn 0.2s ease;
+}
+
+.depth-warning.hidden {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Segmented Control */
+.segmented-control {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  background: var(--bg-input);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  gap: 4px;
+}
+
+.segment-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.segment-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.segment-btn.active {
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-medium);
+}
+
+/* Color Pickers */
+.color-pickers-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.color-picker-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.color-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.color-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+}
+
+.color-input-wrapper input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: transparent;
+  padding: 0;
+}
+
+.color-input-wrapper input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-input-wrapper input[type="color"]::-webkit-color-swatch {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+}
+
+.color-hex-text {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+/* Preset Palettes */
+.preset-palettes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.preset-title {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preset-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.preset-chip:hover {
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+
+.preset-chip.active {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  background: var(--bg-surface-elevated);
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Animation Controls */
+.animation-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+}
+
+.btn-primary {
+  background: var(--accent-primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px var(--accent-primary-glow);
+}
+
+.btn-primary:hover {
+  background: var(--accent-primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  flex: 1;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-medium);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+}
+
+.btn-outline:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--text-secondary);
+}
+
+.btn-icon-only {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+}
+
+.btn-icon-only:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-hover);
+  border-color: var(--border-medium);
+}
+
+/* Export Section */
+.export-section {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.export-buttons-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   Visualizer Canvas Area
+   ========================================================================== */
+.visualizer-container {
+  grid-area: visualizer;
+  position: relative;
+  min-height: 520px;
+  height: 560px;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  background: #000000;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.canvas-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+}
+
+.canvas-viewport:active {
+  cursor: grabbing;
+}
+
+#fractalCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* Canvas Floating HUD Overlays */
+.canvas-hud {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.canvas-hud > * {
+  pointer-events: auto;
+}
+
+.canvas-hud.top-left {
+  top: 14px;
+  left: 14px;
+}
+
+.canvas-hud.top-right {
+  top: 14px;
+  right: 14px;
+}
+
+.hud-tag {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.hud-metric {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  padding: 5px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  padding: 3px 6px;
+  gap: 4px;
+}
+
+.hud-btn {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.hud-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.zoom-level-text {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: #ffffff;
+  padding: 0 6px;
+  min-width: 46px;
+  text-align: center;
+}
+
+.canvas-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  color: #94a3b8;
+  pointer-events: none;
+  opacity: 0.75;
+  transition: opacity var(--transition-fast);
+}
+
+.canvas-viewport:hover .canvas-hint {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   Analytical Dashboard & Metric Cards
+   ========================================================================== */
+.analytics-container {
+  grid-area: analytics;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.analytics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.analytics-title h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.analytics-title p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.math-highlight {
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+.fractal-formula-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+}
+
+.pill-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.pill-val {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-cyan);
+}
+
+/* 6-Card Metric Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.metric-card {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-sm);
+}
+
+.metric-card.highlight {
+  border-color: var(--border-accent);
+  background: linear-gradient(135deg, var(--bg-surface-elevated) 0%, rgba(99, 102, 241, 0.05) 100%);
+}
+
+.metric-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.metric-badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.metric-value-container {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.metric-value {
+  font-family: var(--font-mono);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.metric-value.accent-colored {
+  color: #818cf8;
+}
+
+.metric-value.accent-removed {
+  color: var(--accent-rose);
+}
+
+.metric-sci {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--accent-cyan);
+  font-weight: 500;
+}
+
+.metric-fraction {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.metric-formula {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.metric-footer {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.metric-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-input);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.metric-progress-fill {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: var(--radius-full);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.metric-progress-fill.colored {
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+}
+
+.metric-progress-fill.removed {
+  background: linear-gradient(90deg, #f43f5e, #fb7185);
+}
+
+/* Mathematical Explainer Accordion */
+.math-explainer-card details {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  transition: all var(--transition-fast);
+}
+
+.math-explainer-card details[open] {
+  border-color: var(--border-medium);
+}
+
+.math-explainer-card summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.math-explainer-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.explainer-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.summary-arrow {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  transition: transform var(--transition-fast);
+}
+
+details[open] .summary-arrow {
+  transform: rotate(180deg);
+}
+
+.explainer-content {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.explainer-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-top: 8px;
+}
+
+.explainer-table th, .explainer-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.explainer-table th {
+  color: var(--text-primary);
+  font-weight: 600;
+  background: var(--bg-input);
+}
+
+.explainer-table td {
+  font-family: var(--font-mono);
+}
+
+.code-inline {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--accent-cyan);
+}
+
+/* Footer */
+.app-footer {
+  margin-top: auto;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 1100px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "visualizer"
+      "controls"
+      "analytics";
+  }
+
+  .controls-panel {
+    position: static;
+    max-height: none;
+  }
+
+  .visualizer-container {
+    height: 480px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 10px 12px 24px;
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .type-switcher-wrapper {
+    width: 100%;
+  }
+
+  .type-switcher {
+    width: 100%;
+  }
+
+  .type-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .visualizer-container {
+    height: 380px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+</style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- TOP HEADER -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon" aria-hidden="true">
+          <svg viewBox="0 0 40 40" width="32" height="32">
+            <polygon points="20,4 36,36 4,36" fill="none" stroke="currentColor" stroke-width="2.5"/>
+            <polygon points="20,36 28,20 12,20" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Sierpiński <span class="gradient-text">Fractal Studio</span></h1>
+          <p class="subtitle">Recursive Geometry Simulation &amp; Real-Time Mathematical Analysis</p>
+        </div>
+      </div>
+
+      <!-- FRACTAL TYPE SWITCHER -->
+      <div class="type-switcher-wrapper">
+        <div class="type-switcher" role="radiogroup" aria-label="Select Fractal Type">
+          <button type="button" id="btnTypeTriangle" class="type-btn active" role="radio" aria-checked="true" data-type="triangle">
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+              <polygon points="10,2 19,18 1,18" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span>Sierpiński Triangle</span>
+          </button>
+          <button type="button" id="btnTypeCarpet" class="type-btn" role="radio" aria-checked="false" data-type="carpet">
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+              <rect x="2" y="2" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"/>
+              <rect x="7" y="7" width="6" height="6" fill="currentColor"/>
+            </svg>
+            <span>Sierpiński Carpet</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- HEADER ACTIONS -->
+      <div class="header-actions">
+        <button type="button" id="btnResetView" class="icon-btn" title="Reset Pan & Zoom (Home View)" aria-label="Reset View">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+        <button type="button" id="btnThemeToggle" class="icon-btn theme-toggle" title="Toggle Light / Dark Theme" aria-label="Toggle Theme">
+          <svg class="sun-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="dashboard-grid">
+      <!-- SIDEBAR CONTROLS -->
+      <aside class="controls-panel card">
+        <div class="panel-section-header">
+          <h2>Simulation Controls</h2>
+          <span class="badge" id="badgeComplexity">Active</span>
+        </div>
+
+        <!-- ITERATION DEPTH -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="sliderDepth">
+              Iteration Depth (<span class="math-sym">n</span>)
+            </label>
+            <div class="depth-input-container">
+              <input type="number" id="inputDepth" min="0" max="7" value="3" aria-label="Iteration depth numeric input">
+            </div>
+          </div>
+          <div class="slider-wrapper">
+            <input type="range" id="sliderDepth" min="0" max="7" step="1" value="3" aria-label="Iteration depth slider">
+            <div class="slider-ticks">
+              <span>0</span>
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+              <span>4</span>
+              <span>5</span>
+              <span>6</span>
+              <span class="warning-tick">7</span>
+            </div>
+          </div>
+          <!-- Warning banner for n >= 6 -->
+          <div id="depthWarning" class="depth-warning hidden" role="alert">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+              <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+            </svg>
+            <span id="depthWarningText"><strong>High Complexity Notice:</strong> Rendering up to millions of sub-elements. Hardware acceleration active.</span>
+          </div>
+        </div>
+
+        <!-- RENDER STYLE TOGGLE -->
+        <div class="control-group">
+          <label class="section-sublabel">Render Mode</label>
+          <div class="segmented-control" role="radiogroup" aria-label="Render Mode">
+            <button type="button" class="segment-btn active" id="btnModeFilled" role="radio" aria-checked="true" data-mode="filled">
+              <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor"><rect x="3" y="3" width="14" height="14" rx="2"/></svg>
+              Filled
+            </button>
+            <button type="button" class="segment-btn" id="btnModeWireframe" role="radio" aria-checked="false" data-mode="wireframe">
+              <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="14" height="14" rx="2"/></svg>
+              Wireframe
+            </button>
+            <button type="button" class="segment-btn" id="btnModeCutouts" role="radio" aria-checked="false" data-mode="cutouts" title="Emphasize removed central voids">
+              <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="7"/></svg>
+              Cutouts
+            </button>
+          </div>
+        </div>
+
+        <!-- COLOR PICKERS -->
+        <div class="control-group">
+          <label class="section-sublabel">Palette &amp; Colors</label>
+          <div class="color-pickers-grid">
+            <div class="color-picker-item">
+              <span class="color-label">Pattern Area</span>
+              <div class="color-input-wrapper">
+                <input type="color" id="colorPattern" value="#6366f1" aria-label="Pattern color">
+                <span class="color-hex-text" id="colorPatternHex">#6366F1</span>
+              </div>
+            </div>
+            <div class="color-picker-item">
+              <span class="color-label">Removed Area</span>
+              <div class="color-input-wrapper">
+                <input type="color" id="colorBackground" value="#0f172a" aria-label="Background / Removed area color">
+                <span class="color-hex-text" id="colorBackgroundHex">#0F172A</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Color presets -->
+          <div class="preset-palettes">
+            <span class="preset-title">Presets:</span>
+            <div class="preset-chips">
+              <button type="button" class="preset-chip active" data-pattern="#6366f1" data-bg="#0f172a" title="Indigo & Dark Slate">
+                <span class="swatch" style="background:#6366f1;"></span>
+                <span class="swatch" style="background:#0f172a;"></span>
+                <span>Indigo</span>
+              </button>
+              <button type="button" class="preset-chip" data-pattern="#06b6d4" data-bg="#051923" title="Electric Cyan & Abyss">
+                <span class="swatch" style="background:#06b6d4;"></span>
+                <span class="swatch" style="background:#051923;"></span>
+                <span>Cyan</span>
+              </button>
+              <button type="button" class="preset-chip" data-pattern="#f43f5e" data-bg="#180c14" title="Sunset Rose & Crimson Void">
+                <span class="swatch" style="background:#f43f5e;"></span>
+                <span class="swatch" style="background:#180c14;"></span>
+                <span>Rose</span>
+              </button>
+              <button type="button" class="preset-chip" data-pattern="#10b981" data-bg="#022c22" title="Emerald Matrix">
+                <span class="swatch" style="background:#10b981;"></span>
+                <span class="swatch" style="background:#022c22;"></span>
+                <span>Emerald</span>
+              </button>
+              <button type="button" class="preset-chip" data-pattern="#f59e0b" data-bg="#1c1917" title="Amber Gold">
+                <span class="swatch" style="background:#f59e0b;"></span>
+                <span class="swatch" style="background:#1c1917;"></span>
+                <span>Amber</span>
+              </button>
+              <button type="button" class="preset-chip" data-pattern="#2563eb" data-bg="#f8fafc" title="Azure & Clean White">
+                <span class="swatch" style="background:#2563eb;"></span>
+                <span class="swatch" style="background:#f8fafc;"></span>
+                <span>Azure Light</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROGRESSIVE ANIMATION PLAYBACK -->
+        <div class="control-group">
+          <label class="section-sublabel">Step-by-Step Evolution</label>
+          <div class="animation-buttons">
+            <button type="button" id="btnPlayAnimation" class="btn btn-secondary" title="Play progressive iterations from 0 to current depth">
+              <svg id="iconPlay" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              <svg id="iconPause" class="hidden" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16"/>
+                <rect x="14" y="4" width="4" height="16"/>
+              </svg>
+              <span id="labelPlay">Play Evolution</span>
+            </button>
+            <button type="button" id="btnStepPrev" class="btn btn-icon-only" title="Previous depth (n - 1)" aria-label="Previous step">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button type="button" id="btnStepNext" class="btn btn-icon-only" title="Next depth (n + 1)" aria-label="Next step">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- EXPORT ACTIONS -->
+        <div class="control-group export-section">
+          <label class="section-sublabel">Export Fractal</label>
+          <div class="export-buttons-grid">
+            <button type="button" id="btnExportPNG" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Export PNG (High-Res)</span>
+            </button>
+            <button type="button" id="btnExportSVG" class="btn btn-outline" title="Export as scalable vector graphic">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="9"/>
+                <polygon points="12 8 16 16 8 16"/>
+              </svg>
+              <span>Export SVG</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- VISUALIZER CANVAS AREA -->
+      <section class="visualizer-container card" aria-label="Fractal Visualizer">
+        <!-- Floating HUD Overlays -->
+        <div class="canvas-hud top-left">
+          <span class="hud-tag" id="hudFractalName">Sierpiński Triangle</span>
+          <span class="hud-metric" id="hudRenderTime">Render: 0ms</span>
+        </div>
+
+        <div class="canvas-hud top-right">
+          <div class="zoom-controls">
+            <button type="button" id="btnZoomIn" class="hud-btn" title="Zoom In (+)" aria-label="Zoom In">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <span class="zoom-level-text" id="hudZoomText">100%</span>
+            <button type="button" id="btnZoomOut" class="hud-btn" title="Zoom Out (-)" aria-label="Zoom Out">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button type="button" id="btnRecenter" class="hud-btn" title="Recenter View" aria-label="Recenter">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Canvas -->
+        <div class="canvas-viewport" id="canvasViewport">
+          <canvas id="fractalCanvas" width="800" height="800"></canvas>
+          <div class="canvas-hint" id="canvasHint">
+            <span>Scroll to zoom &bull; Drag to pan &bull; Double-click to reset</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANALYTICAL DASHBOARD METRIC CARDS -->
+      <section class="analytics-container card" aria-label="Analytical Dashboard">
+        <div class="analytics-header">
+          <div class="analytics-title">
+            <h2>Real-Time Mathematical Analytics</h2>
+            <p>Exact combinatorial counts, geometric proportions, and fractal invariants at iteration level <span class="math-highlight" id="lblCurrentN">n = 3</span>.</p>
+          </div>
+          <div class="fractal-formula-pill" id="pillDimensionFormula">
+            <span class="pill-label">Hausdorff Dimension:</span>
+            <span class="pill-val" id="valHausdorffSummary">D = log(3) / log(2) ≈ 1.5850</span>
+          </div>
+        </div>
+
+        <div class="metrics-grid">
+          <!-- CARD 1: Iteration Depth -->
+          <div class="metric-card">
+            <div class="metric-card-header">
+              <span class="metric-label">Iteration Level</span>
+              <span class="metric-badge">n</span>
+            </div>
+            <div class="metric-value" id="metricDepth">3</div>
+            <div class="metric-formula" id="metricDepthFormula">Base recursion level</div>
+            <div class="metric-footer">
+              <span class="subtext">Scale factor per step: <strong id="metricScaleFactor">1/2 (50%)</strong></span>
+            </div>
+          </div>
+
+          <!-- CARD 2: Remaining Shapes Count -->
+          <div class="metric-card highlight">
+            <div class="metric-card-header">
+              <span class="metric-label">Remaining Shapes Count</span>
+              <span class="metric-badge" id="badgeRemainingFormula">N(n) = 3ⁿ</span>
+            </div>
+            <div class="metric-value-container">
+              <div class="metric-value" id="metricRemainingCount">27</div>
+              <div class="metric-sci" id="metricRemainingSci"></div>
+            </div>
+            <div class="metric-formula" id="metricRemainingDesc">Number of colored self-similar copies</div>
+            <div class="metric-progress-bar">
+              <div class="metric-progress-fill" id="progressRemaining"></div>
+            </div>
+          </div>
+
+          <!-- CARD 3: Removed Shapes Count -->
+          <div class="metric-card">
+            <div class="metric-card-header">
+              <span class="metric-label">Removed Shapes (Excavated)</span>
+              <span class="metric-badge" id="badgeRemovedFormula">Cumulative</span>
+            </div>
+            <div class="metric-value-container">
+              <div class="metric-value" id="metricRemovedCumulative">13</div>
+              <div class="metric-sci" id="metricRemovedSci"></div>
+            </div>
+            <div class="metric-formula" id="metricRemovedFormula">Formula: (3ⁿ - 1) / 2</div>
+            <div class="metric-footer">
+              <span class="subtext">Newly removed in step n: <strong id="metricRemovedStep">9</strong></span>
+            </div>
+          </div>
+
+          <!-- CARD 4: Colored Area -->
+          <div class="metric-card">
+            <div class="metric-card-header">
+              <span class="metric-label">Remaining Colored Area</span>
+              <span class="metric-badge" id="badgeColoredAreaFormula">(3/4)ⁿ</span>
+            </div>
+            <div class="metric-value-container">
+              <div class="metric-value accent-colored" id="metricColoredPct">42.19%</div>
+              <div class="metric-fraction" id="metricColoredFraction">Fraction: 27 / 64</div>
+            </div>
+            <div class="metric-formula">Theoretical area ratio vs original geometry</div>
+            <div class="metric-progress-bar">
+              <div class="metric-progress-fill colored" id="progressColoredArea" style="width: 42.19%;"></div>
+            </div>
+          </div>
+
+          <!-- CARD 5: Removed / White Area -->
+          <div class="metric-card">
+            <div class="metric-card-header">
+              <span class="metric-label">White / Removed Area</span>
+              <span class="metric-badge" id="badgeRemovedAreaFormula">1 - (3/4)ⁿ</span>
+            </div>
+            <div class="metric-value-container">
+              <div class="metric-value accent-removed" id="metricRemovedPct">57.81%</div>
+              <div class="metric-fraction" id="metricRemovedFraction">Fraction: 37 / 64</div>
+            </div>
+            <div class="metric-formula">Cumulative void area excavated from seed</div>
+            <div class="metric-progress-bar">
+              <div class="metric-progress-fill removed" id="progressRemovedArea" style="width: 57.81%;"></div>
+            </div>
+          </div>
+
+          <!-- CARD 6: Hausdorff Dimension & Fractal Paradox -->
+          <div class="metric-card">
+            <div class="metric-card-header">
+              <span class="metric-label">Hausdorff Dimension</span>
+              <span class="metric-badge">DH</span>
+            </div>
+            <div class="metric-value-container">
+              <div class="metric-value" id="metricDimension">1.5850</div>
+              <div class="metric-sci" id="metricDimensionFormula">log(3) / log(2)</div>
+            </div>
+            <div class="metric-formula" id="metricDimensionDetail">
+              Fractional dimension strictly between 1D and 2D.
+            </div>
+            <div class="metric-footer">
+              <span class="subtext">As n &rarr; &infin;: Area &rarr; <strong>0</strong>, Boundary &rarr; <strong>&infin;</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MATHEMATICAL DEEP DIVE EXPANDER -->
+        <div class="math-explainer-card">
+          <details id="detailsMath">
+            <summary>
+              <span class="explainer-title">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                Mathematical Derivations &amp; Theoretical Paradox
+              </span>
+              <span class="summary-arrow">&darr;</span>
+            </summary>
+            <div class="explainer-content" id="explainerContent">
+              <!-- Dynamically populated based on active fractal -->
+            </div>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <div class="footer-inner">
+        <span>Sierpiński Fractal Explorer &bull; Pure Client-Side HTML5 Canvas &amp; Vector SVG</span>
+        <span class="footer-links">
+          <span>Self-Similar Dimension Simulator</span>
+        </span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+/**
+ * ============================================================================
+ * Sierpiński Fractal Studio & Analytical Dashboard
+ * ============================================================================
+ * Pure client-side simulation, interactive canvas with pan/zoom,
+ * analytical combinatorial metrics, and high-res PNG/SVG export.
+ */
+
+(() => {
+  'use strict';
+
+  // --- State Configuration ---
+  const state = {
+    type: 'triangle',          // 'triangle' | 'carpet'
+    depth: 3,                  // 0 to 7
+    mode: 'filled',            // 'filled' | 'wireframe' | 'cutouts'
+    patternColor: '#6366f1',
+    backgroundColor: '#0f172a',
+    camera: {
+      x: 0,
+      y: 0,
+      zoom: 1
+    },
+    isDragging: false,
+    dragStart: { x: 0, y: 0 },
+    cameraStart: { x: 0, y: 0 },
+    animationTimer: null,
+    isPlaying: false
+  };
+
+  // --- DOM Elements Cache ---
+  const dom = {
+    // Type buttons
+    btnTypeTriangle: document.getElementById('btnTypeTriangle'),
+    btnTypeCarpet: document.getElementById('btnTypeCarpet'),
+
+    // View & Theme
+    btnResetView: document.getElementById('btnResetView'),
+    btnThemeToggle: document.getElementById('btnThemeToggle'),
+    hudFractalName: document.getElementById('hudFractalName'),
+    hudRenderTime: document.getElementById('hudRenderTime'),
+    hudZoomText: document.getElementById('hudZoomText'),
+    btnZoomIn: document.getElementById('btnZoomIn'),
+    btnZoomOut: document.getElementById('btnZoomOut'),
+    btnRecenter: document.getElementById('btnRecenter'),
+
+    // Controls
+    sliderDepth: document.getElementById('sliderDepth'),
+    inputDepth: document.getElementById('inputDepth'),
+    depthWarning: document.getElementById('depthWarning'),
+    depthWarningText: document.getElementById('depthWarningText'),
+    badgeComplexity: document.getElementById('badgeComplexity'),
+
+    // Render Mode
+    btnModeFilled: document.getElementById('btnModeFilled'),
+    btnModeWireframe: document.getElementById('btnModeWireframe'),
+    btnModeCutouts: document.getElementById('btnModeCutouts'),
+
+    // Colors
+    colorPattern: document.getElementById('colorPattern'),
+    colorBackground: document.getElementById('colorBackground'),
+    colorPatternHex: document.getElementById('colorPatternHex'),
+    colorBackgroundHex: document.getElementById('colorBackgroundHex'),
+    presetChips: document.querySelectorAll('.preset-chip'),
+
+    // Animation
+    btnPlayAnimation: document.getElementById('btnPlayAnimation'),
+    iconPlay: document.getElementById('iconPlay'),
+    iconPause: document.getElementById('iconPause'),
+    labelPlay: document.getElementById('labelPlay'),
+    btnStepPrev: document.getElementById('btnStepPrev'),
+    btnStepNext: document.getElementById('btnStepNext'),
+
+    // Export
+    btnExportPNG: document.getElementById('btnExportPNG'),
+    btnExportSVG: document.getElementById('btnExportSVG'),
+
+    // Canvas
+    canvasViewport: document.getElementById('canvasViewport'),
+    canvas: document.getElementById('fractalCanvas'),
+
+    // Analytics Dashboard
+    lblCurrentN: document.getElementById('lblCurrentN'),
+    pillDimensionFormula: document.getElementById('pillDimensionFormula'),
+    valHausdorffSummary: document.getElementById('valHausdorffSummary'),
+    metricDepth: document.getElementById('metricDepth'),
+    metricDepthFormula: document.getElementById('metricDepthFormula'),
+    metricScaleFactor: document.getElementById('metricScaleFactor'),
+
+    badgeRemainingFormula: document.getElementById('badgeRemainingFormula'),
+    metricRemainingCount: document.getElementById('metricRemainingCount'),
+    metricRemainingSci: document.getElementById('metricRemainingSci'),
+    metricRemainingDesc: document.getElementById('metricRemainingDesc'),
+    progressRemaining: document.getElementById('progressRemaining'),
+
+    badgeRemovedFormula: document.getElementById('badgeRemovedFormula'),
+    metricRemovedCumulative: document.getElementById('metricRemovedCumulative'),
+    metricRemovedSci: document.getElementById('metricRemovedSci'),
+    metricRemovedFormula: document.getElementById('metricRemovedFormula'),
+    metricRemovedStep: document.getElementById('metricRemovedStep'),
+
+    badgeColoredAreaFormula: document.getElementById('badgeColoredAreaFormula'),
+    metricColoredPct: document.getElementById('metricColoredPct'),
+    metricColoredFraction: document.getElementById('metricColoredFraction'),
+    progressColoredArea: document.getElementById('progressColoredArea'),
+
+    badgeRemovedAreaFormula: document.getElementById('badgeRemovedAreaFormula'),
+    metricRemovedPct: document.getElementById('metricRemovedPct'),
+    metricRemovedFraction: document.getElementById('metricRemovedFraction'),
+    progressRemovedArea: document.getElementById('progressRemovedArea'),
+
+    metricDimension: document.getElementById('metricDimension'),
+    metricDimensionFormula: document.getElementById('metricDimensionFormula'),
+    metricDimensionDetail: document.getElementById('metricDimensionDetail'),
+    explainerContent: document.getElementById('explainerContent')
+  };
+
+  const ctx = dom.canvas.getContext('2d');
+
+  // Base Geometry Constants
+  const BASE_SIZE = 560; // Initial side length in world units
+
+  // --- BigInt Math Helper Functions ---
+  const BigPow = (base, exp) => BigInt(base) ** BigInt(exp);
+
+  function formatBigNumber(n) {
+    const s = n.toString();
+    if (s.length > 5) {
+      const num = Number(n);
+      const exp = Math.floor(Math.log10(num));
+      const mantissa = (num / Math.pow(10, exp)).toFixed(3);
+      return {
+        formatted: n.toLocaleString('en-US'),
+        sci: `${mantissa} × 10${toSuperscript(exp)}`
+      };
+    }
+    return {
+      formatted: n.toLocaleString('en-US'),
+      sci: ''
+    };
+  }
+
+  function toSuperscript(num) {
+    const chars = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻' };
+    return String(num).split('').map(c => chars[c] || c).join('');
+  }
+
+  // --- Real-Time Analytics Calculations ---
+  function updateAnalytics() {
+    const n = state.depth;
+    const isTriangle = state.type === 'triangle';
+
+    dom.lblCurrentN.textContent = `n = ${n}`;
+    dom.metricDepth.textContent = n;
+
+    if (isTriangle) {
+      // 1. Scale factor
+      dom.metricScaleFactor.textContent = `(1/2)ⁿ = 1/${Math.pow(2, n)} (${(Math.pow(0.5, n) * 100).toFixed(2)}%)`;
+      dom.metricDepthFormula.textContent = `Side length: s₀ / 2ⁿ`;
+
+      // 2. Remaining Shapes Count N(n) = 3^n
+      const remBig = BigPow(3, n);
+      const remFormatted = formatBigNumber(remBig);
+      dom.badgeRemainingFormula.textContent = `N(n) = 3ⁿ`;
+      dom.metricRemainingCount.textContent = remFormatted.formatted;
+      dom.metricRemainingSci.textContent = remFormatted.sci;
+      dom.metricRemainingDesc.textContent = `Number of colored self-similar triangles`;
+      dom.progressRemaining.style.width = `${Math.min(100, ((n + 1) / 8) * 100)}%`;
+
+      // 3. Removed Shapes Count
+      // Newly removed in step n: 3^(n-1) if n >= 1, else 0
+      const stepRemoved = n === 0 ? 0n : BigPow(3, n - 1);
+      // Cumulative removed: (3^n - 1) / 2
+      const cumRemoved = (remBig - 1n) / 2n;
+      const cumFormatted = formatBigNumber(cumRemoved);
+      dom.badgeRemovedFormula.textContent = `(3ⁿ - 1) / 2`;
+      dom.metricRemovedCumulative.textContent = cumFormatted.formatted;
+      dom.metricRemovedSci.textContent = cumFormatted.sci;
+      dom.metricRemovedFormula.textContent = `Formula: (3ⁿ - 1) / 2 inverted triangles`;
+      dom.metricRemovedStep.textContent = stepRemoved.toLocaleString('en-US');
+
+      // 4. Colored Area: (3/4)^n
+      const areaRatio = Math.pow(0.75, n);
+      const areaPct = (areaRatio * 100).toFixed(n > 4 ? 4 : 2);
+      const numFraction = BigPow(3, n);
+      const denFraction = BigPow(4, n);
+      dom.badgeColoredAreaFormula.textContent = `(3/4)ⁿ`;
+      dom.metricColoredPct.textContent = `${areaPct}%`;
+      dom.metricColoredFraction.textContent = `Fraction: ${numFraction.toLocaleString('en-US')} / ${denFraction.toLocaleString('en-US')}`;
+      dom.progressColoredArea.style.width = `${Math.max(0.5, areaRatio * 100)}%`;
+
+      // 5. White / Removed Area: 1 - (3/4)^n
+      const removedRatio = 1 - areaRatio;
+      const removedPct = (removedRatio * 100).toFixed(n > 4 ? 4 : 2);
+      const removedNum = denFraction - numFraction;
+      dom.badgeRemovedAreaFormula.textContent = `1 - (3/4)ⁿ`;
+      dom.metricRemovedPct.textContent = `${removedPct}%`;
+      dom.metricRemovedFraction.textContent = `Fraction: ${removedNum.toLocaleString('en-US')} / ${denFraction.toLocaleString('en-US')}`;
+      dom.progressRemovedArea.style.width = `${removedRatio * 100}%`;
+
+      // 6. Hausdorff Dimension: log(3) / log(2) ≈ 1.5849625
+      const dH = Math.log(3) / Math.log(2);
+      dom.metricDimension.textContent = dH.toFixed(4);
+      dom.metricDimensionFormula.textContent = `log(3) / log(2)`;
+      dom.valHausdorffSummary.textContent = `D = log(3) / log(2) ≈ ${dH.toFixed(4)}`;
+      dom.metricDimensionDetail.textContent = `Between 1D line and 2D surface. Box-counting: D = ln(3)/ln(2).`;
+
+      // Explainer Content
+      dom.explainerContent.innerHTML = `
+        <p><strong>The Sierpiński Gasket (Triangle)</strong> is constructed recursively by removing the inverted central triangle at each stage.</p>
+        <p><strong>Fractal Dimension Calculation:</strong> At each step, 1 triangle is replaced by <span class="code-inline">N = 3</span> sub-triangles scaled by factor <span class="code-inline">s = 1/2</span>. The Hausdorff dimension is:
+          <br><span class="code-inline">D = log(N) / log(1/s) = log(3) / log(2) &approx; 1.58496</span>
+        </p>
+        <table class="explainer-table">
+          <thead>
+            <tr><th>Depth (n)</th><th>Remaining N(n)</th><th>Removed (Cumul.)</th><th>Remaining Area</th><th>Perimeter (P₀=3)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>0</td><td>1</td><td>0</td><td>100.00%</td><td>3.00</td></tr>
+            <tr><td>1</td><td>3</td><td>1</td><td>75.00%</td><td>4.50</td></tr>
+            <tr><td>2</td><td>9</td><td>4</td><td>56.25%</td><td>6.75</td></tr>
+            <tr><td>3</td><td>27</td><td>13</td><td>42.19%</td><td>10.13</td></tr>
+            <tr><td>5</td><td>243</td><td>121</td><td>23.73%</td><td>22.78</td></tr>
+            <tr><td>7</td><td>2,187</td><td>1,093</td><td>13.35%</td><td>51.26</td></tr>
+          </tbody>
+        </table>
+        <p><strong>The Classic Paradox:</strong> As <span class="code-inline">n &rarr; &infin;</span>, the remaining colored area approaches <span class="code-inline">0</span>, yet the boundary perimeter grows infinitely: <span class="code-inline">P(n) = 3 &times; (3/2)ⁿ &rarr; &infin;</span>.</p>
+      `;
+
+    } else {
+      // SIERPINSKI CARPET
+      // 1. Scale factor
+      dom.metricScaleFactor.textContent = `(1/3)ⁿ = 1/${Math.pow(3, n)} (${(Math.pow(1/3, n) * 100).toFixed(2)}%)`;
+      dom.metricDepthFormula.textContent = `Side length: s₀ / 3ⁿ`;
+
+      // 2. Remaining Shapes Count N(n) = 8^n
+      const remBig = BigPow(8, n);
+      const remFormatted = formatBigNumber(remBig);
+      dom.badgeRemainingFormula.textContent = `N(n) = 8ⁿ`;
+      dom.metricRemainingCount.textContent = remFormatted.formatted;
+      dom.metricRemainingSci.textContent = remFormatted.sci;
+      dom.metricRemainingDesc.textContent = `Number of colored self-similar squares`;
+      dom.progressRemaining.style.width = `${Math.min(100, ((n + 1) / 8) * 100)}%`;
+
+      // 3. Removed Shapes Count
+      // Newly removed in step n: 8^(n-1) if n >= 1, else 0
+      const stepRemoved = n === 0 ? 0n : BigPow(8, n - 1);
+      // Cumulative removed: (8^n - 1) / 7
+      const cumRemoved = (remBig - 1n) / 7n;
+      const cumFormatted = formatBigNumber(cumRemoved);
+      dom.badgeRemovedFormula.textContent = `(8ⁿ - 1) / 7`;
+      dom.metricRemovedCumulative.textContent = cumFormatted.formatted;
+      dom.metricRemovedSci.textContent = cumFormatted.sci;
+      dom.metricRemovedFormula.textContent = `Formula: (8ⁿ - 1) / 7 central square voids`;
+      dom.metricRemovedStep.textContent = stepRemoved.toLocaleString('en-US');
+
+      // 4. Colored Area: (8/9)^n
+      const areaRatio = Math.pow(8 / 9, n);
+      const areaPct = (areaRatio * 100).toFixed(n > 4 ? 4 : 2);
+      const numFraction = BigPow(8, n);
+      const denFraction = BigPow(9, n);
+      dom.badgeColoredAreaFormula.textContent = `(8/9)ⁿ`;
+      dom.metricColoredPct.textContent = `${areaPct}%`;
+      dom.metricColoredFraction.textContent = `Fraction: ${numFraction.toLocaleString('en-US')} / ${denFraction.toLocaleString('en-US')}`;
+      dom.progressColoredArea.style.width = `${Math.max(0.5, areaRatio * 100)}%`;
+
+      // 5. White / Removed Area: 1 - (8/9)^n
+      const removedRatio = 1 - areaRatio;
+      const removedPct = (removedRatio * 100).toFixed(n > 4 ? 4 : 2);
+      const removedNum = denFraction - numFraction;
+      dom.badgeRemovedAreaFormula.textContent = `1 - (8/9)ⁿ`;
+      dom.metricRemovedPct.textContent = `${removedPct}%`;
+      dom.metricRemovedFraction.textContent = `Fraction: ${removedNum.toLocaleString('en-US')} / ${denFraction.toLocaleString('en-US')}`;
+      dom.progressRemovedArea.style.width = `${removedRatio * 100}%`;
+
+      // 6. Hausdorff Dimension: log(8) / log(3) ≈ 1.892789
+      const dH = Math.log(8) / Math.log(3);
+      dom.metricDimension.textContent = dH.toFixed(4);
+      dom.metricDimensionFormula.textContent = `log(8) / log(3)`;
+      dom.valHausdorffSummary.textContent = `D = log(8) / log(3) ≈ ${dH.toFixed(4)}`;
+      dom.metricDimensionDetail.textContent = `More dense than triangle. Box-counting: D = 3·ln(2)/ln(3).`;
+
+      // Explainer Content
+      dom.explainerContent.innerHTML = `
+        <p><strong>The Sierpiński Carpet</strong> is a 2D plane fractal generalization of the Cantor Set, introduced by Wacław Sierpiński in 1916.</p>
+        <p><strong>Fractal Dimension Calculation:</strong> Each square is subdivided into 9 equal squares, and the 1 center square is excised, leaving <span class="code-inline">N = 8</span> sub-squares of scale <span class="code-inline">s = 1/3</span>. The Hausdorff dimension is:
+          <br><span class="code-inline">D = log(N) / log(1/s) = log(8) / log(3) &approx; 1.89279</span>
+        </p>
+        <table class="explainer-table">
+          <thead>
+            <tr><th>Depth (n)</th><th>Remaining N(n)</th><th>Removed (Cumul.)</th><th>Remaining Area</th><th>Perimeter (P₀=4)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>0</td><td>1</td><td>0</td><td>100.00%</td><td>4.00</td></tr>
+            <tr><td>1</td><td>8</td><td>1</td><td>88.89%</td><td>5.33</td></tr>
+            <tr><td>2</td><td>64</td><td>9</td><td>79.01%</td><td>7.11</td></tr>
+            <tr><td>3</td><td>512</td><td>73</td><td>70.23%</td><td>9.48</td></tr>
+            <tr><td>5</td><td>32,768</td><td>4,681</td><td>55.49%</td><td>16.85</td></tr>
+            <tr><td>7</td><td>2,097,152</td><td>299,593</td><td>43.85%</td><td>29.96</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Geometric Density:</strong> Unlike the Triangle where area decays by <span class="code-inline">0.75ⁿ</span>, the Carpet retains more material (<span class="code-inline">0.8889ⁿ</span>), yielding a higher fractal dimension of <span class="code-inline">1.8928</span>.</p>
+      `;
+    }
+
+    // Complexity Warning indicator
+    if (state.depth >= 6) {
+      dom.depthWarning.classList.remove('hidden');
+      if (state.type === 'carpet') {
+        const count = state.depth === 7 ? '2,097,152' : '262,144';
+        dom.depthWarningText.innerHTML = `<strong>Depth ${state.depth} Notice:</strong> Carpet generates ${count} sub-elements. Optimized cutouts and GPU LOD active.`;
+      } else {
+        const count = state.depth === 7 ? '2,187' : '729';
+        dom.depthWarningText.innerHTML = `<strong>Depth ${state.depth} Active:</strong> Triangle creates ${count} sub-triangles. Canvas 2D running at peak efficiency.`;
+      }
+      dom.badgeComplexity.textContent = state.depth === 7 ? 'Level 7 Extreme' : 'Level 6 High';
+      dom.badgeComplexity.className = 'badge warning';
+    } else {
+      dom.depthWarning.classList.add('hidden');
+      dom.badgeComplexity.textContent = 'Active';
+      dom.badgeComplexity.className = 'badge';
+    }
+  }
+
+  // --- Canvas Coordinate Space Transformations ---
+  function resizeCanvas() {
+    const rect = dom.canvasViewport.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(rect.width || 0, 400);
+    const h = Math.max(rect.height || 0, 400);
+    dom.canvas.width = Math.round(w * dpr);
+    dom.canvas.height = Math.round(h * dpr);
+    render();
+  }
+
+  function worldToScreen(wx, wy) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = dom.canvas.width / dpr;
+    const h = dom.canvas.height / dpr;
+    return {
+      x: w / 2 + (wx - state.camera.x) * state.camera.zoom,
+      y: h / 2 + (wy - state.camera.y) * state.camera.zoom
+    };
+  }
+
+  function screenToWorld(sx, sy) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = dom.canvas.width / dpr;
+    const h = dom.canvas.height / dpr;
+    return {
+      x: state.camera.x + (sx - w / 2) / state.camera.zoom,
+      y: state.camera.y + (sy - h / 2) / state.camera.zoom
+    };
+  }
+
+  // --- Recursive Fractal Generators ---
+
+  /**
+   * Sierpiński Triangle Generator
+   */
+  function renderSierpinskiTriangle(targetCtx, scale, offX, offY, viewWidth, viewHeight) {
+    const n = state.depth;
+    const s = BASE_SIZE;
+    const h = s * (Math.sqrt(3) / 2);
+
+    // Initial Equilateral Triangle centered at (0, 0)
+    const p1 = { x: 0, y: -h * (2 / 3) };
+    const p2 = { x: -s / 2, y: h / 3 };
+    const p3 = { x: s / 2, y: h / 3 };
+
+    if (state.mode === 'cutouts') {
+      // Cutouts mode: Draw big base triangle, then highlight excavated inverted triangles
+      targetCtx.fillStyle = state.backgroundColor;
+      targetCtx.beginPath();
+      targetCtx.moveTo(p1.x, p1.y);
+      targetCtx.lineTo(p2.x, p2.y);
+      targetCtx.lineTo(p3.x, p3.y);
+      targetCtx.closePath();
+      targetCtx.fill();
+
+      if (n > 0) {
+        targetCtx.fillStyle = state.patternColor;
+        targetCtx.beginPath();
+        drawTriangleHoles(targetCtx, p1, p2, p3, n);
+        targetCtx.fill();
+      }
+      return;
+    }
+
+    // Filled or Wireframe mode
+    targetCtx.beginPath();
+    generateTriangles(targetCtx, p1, p2, p3, n, scale);
+
+    if (state.mode === 'wireframe') {
+      targetCtx.strokeStyle = state.patternColor;
+      targetCtx.lineWidth = Math.max(1 / scale, 1.2);
+      targetCtx.stroke();
+    } else {
+      // Filled mode
+      targetCtx.fillStyle = state.patternColor;
+      targetCtx.fill();
+    }
+  }
+
+  function generateTriangles(tCtx, a, b, c, depth, scale) {
+    if (depth === 0) {
+      tCtx.moveTo(a.x, a.y);
+      tCtx.lineTo(b.x, b.y);
+      tCtx.lineTo(c.x, c.y);
+      tCtx.closePath();
+      return;
+    }
+
+    // Midpoints
+    const ab = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const bc = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
+    const ca = { x: (c.x + a.x) / 2, y: (c.y + a.y) / 2 };
+
+    generateTriangles(tCtx, a, ab, ca, depth - 1, scale);
+    generateTriangles(tCtx, ab, b, bc, depth - 1, scale);
+    generateTriangles(tCtx, ca, bc, c, depth - 1, scale);
+  }
+
+  function drawTriangleHoles(tCtx, a, b, c, depth) {
+    if (depth === 0) return;
+
+    const ab = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const bc = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
+    const ca = { x: (c.x + a.x) / 2, y: (c.y + a.y) / 2 };
+
+    // Inverted center hole
+    tCtx.moveTo(ab.x, ab.y);
+    tCtx.lineTo(bc.x, bc.y);
+    tCtx.lineTo(ca.x, ca.y);
+    tCtx.closePath();
+
+    drawTriangleHoles(tCtx, a, ab, ca, depth - 1);
+    drawTriangleHoles(tCtx, ab, b, bc, depth - 1);
+    drawTriangleHoles(tCtx, ca, bc, c, depth - 1);
+  }
+
+  /**
+   * Sierpiński Carpet Generator
+   * Highly optimized:
+   * - Filled mode draws solid base, then excises removed squares in batched fillRect
+   * - Viewport Frustum Culling + Screen Pixel LOD avoids recursing sub-pixels (< 0.35px)
+   */
+  function renderSierpinskiCarpet(targetCtx, scale, offX, offY, viewWidth, viewHeight) {
+    const n = state.depth;
+    const s = BASE_SIZE;
+    const halfS = s / 2;
+
+    // Viewport bounding box in world coordinates for frustum culling
+    const minX = offX - (viewWidth / 2) / scale;
+    const maxX = offX + (viewWidth / 2) / scale;
+    const minY = offY - (viewHeight / 2) / scale;
+    const maxY = offY + (viewHeight / 2) / scale;
+
+    if (state.mode === 'cutouts') {
+      // Cutouts mode: background base, then highlight all excavated voids
+      targetCtx.fillStyle = state.backgroundColor;
+      targetCtx.fillRect(-halfS, -halfS, s, s);
+
+      if (n > 0) {
+        targetCtx.fillStyle = state.patternColor;
+        drawCarpetCutouts(targetCtx, -halfS, -halfS, s, n, scale, minX, maxX, minY, maxY);
+      }
+      return;
+    }
+
+    if (state.mode === 'wireframe') {
+      // Wireframe mode: stroke the perimeter and recursive cuts
+      targetCtx.strokeStyle = state.patternColor;
+      targetCtx.lineWidth = Math.max(1 / scale, 1.2);
+      targetCtx.strokeRect(-halfS, -halfS, s, s);
+
+      if (n > 0) {
+        drawCarpetWireframe(targetCtx, -halfS, -halfS, s, n, scale, minX, maxX, minY, maxY);
+      }
+      return;
+    }
+
+    // Filled mode:
+    // 1. Draw solid outer base in pattern color
+    targetCtx.fillStyle = state.patternColor;
+    targetCtx.fillRect(-halfS, -halfS, s, s);
+
+    if (n === 0) return;
+
+    // 2. Punch out the removed center squares using background color
+    targetCtx.fillStyle = state.backgroundColor;
+    drawCarpetHoles(targetCtx, -halfS, -halfS, s, n, scale, minX, maxX, minY, maxY);
+  }
+
+  function drawCarpetHoles(tCtx, x, y, size, depth, scale, minX, maxX, minY, maxY) {
+    // Frustum cull
+    if (x > maxX || x + size < minX || y > maxY || y + size < minY) {
+      return;
+    }
+
+    // Screen-space LOD threshold
+    if (size * scale < 0.35) {
+      return;
+    }
+
+    const sub = size / 3;
+
+    // Center square is removed
+    tCtx.fillRect(x + sub, y + sub, sub, sub);
+
+    if (depth > 1) {
+      const nextDepth = depth - 1;
+      // 8 surrounding squares
+      drawCarpetHoles(tCtx, x,           y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x + sub,     y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x + 2 * sub, y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x,           y + sub,     sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x + 2 * sub, y + sub,     sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x,           y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x + sub,     y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetHoles(tCtx, x + 2 * sub, y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
+    }
+  }
+
+  function drawCarpetWireframe(tCtx, x, y, size, depth, scale, minX, maxX, minY, maxY) {
+    if (x > maxX || x + size < minX || y > maxY || y + size < minY) return;
+    if (size * scale < 1.0) return;
+
+    const sub = size / 3;
+    tCtx.strokeRect(x + sub, y + sub, sub, sub);
+
+    if (depth > 1) {
+      const nextDepth = depth - 1;
+      drawCarpetWireframe(tCtx, x,           y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x + sub,     y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x + 2 * sub, y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x,           y + sub,     sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x + 2 * sub, y + sub,     sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x,           y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x + sub,     y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetWireframe(tCtx, x + 2 * sub, y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
+    }
+  }
+
+  function drawCarpetCutouts(tCtx, x, y, size, depth, scale, minX, maxX, minY, maxY) {
+    if (x > maxX || x + size < minX || y > maxY || y + size < minY) return;
+    if (size * scale < 0.35) return;
+
+    const sub = size / 3;
+    tCtx.fillRect(x + sub, y + sub, sub, sub);
+
+    if (depth > 1) {
+      const nextDepth = depth - 1;
+      drawCarpetCutouts(tCtx, x,           y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x + sub,     y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x + 2 * sub, y,           sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x,           y + sub,     sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x + 2 * sub, y + sub,     sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x,           y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x + sub,     y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
+      drawCarpetCutouts(tCtx, x + 2 * sub, y + 2 * sub, sub, nextDepth, scale, minX, maxX, minY, maxY);
+    }
+  }
+
+  // --- Main Render Pipeline ---
+  function render() {
+    const tStart = performance.now();
+    const dpr = window.devicePixelRatio || 1;
+    const w = dom.canvas.width;
+    const h = dom.canvas.height;
+    const cssW = w / dpr;
+    const cssH = h / dpr;
+
+    // Reset transform & clear
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // Canvas Background
+    ctx.fillStyle = state.backgroundColor;
+    ctx.fillRect(0, 0, w, h);
+
+    // Apply Camera Transform with DPR scaling
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.translate(cssW / 2, cssH / 2);
+    ctx.scale(state.camera.zoom, state.camera.zoom);
+    ctx.translate(-state.camera.x, -state.camera.y);
+
+    // Render active fractal
+    if (state.type === 'triangle') {
+      renderSierpinskiTriangle(ctx, state.camera.zoom, state.camera.x, state.camera.y, cssW, cssH);
+    } else {
+      renderSierpinskiCarpet(ctx, state.camera.zoom, state.camera.x, state.camera.y, cssW, cssH);
+    }
+
+    ctx.restore();
+
+    // Benchmarking & HUD Updates
+    const elapsed = performance.now() - tStart;
+    dom.hudRenderTime.textContent = `Render: ${elapsed < 1 ? elapsed.toFixed(2) : elapsed.toFixed(1)}ms`;
+    dom.hudZoomText.textContent = `${Math.round(state.camera.zoom * 100)}%`;
+    dom.hudFractalName.textContent = state.type === 'triangle' ? 'Sierpiński Triangle' : 'Sierpiński Carpet';
+
+    updateAnalytics();
+  }
+
+  // --- Viewport & Camera Interaction Handlers ---
+  function resetCamera() {
+    state.camera.x = 0;
+    state.camera.y = 0;
+    state.camera.zoom = 1;
+    render();
+  }
+
+  function adjustZoom(factor, clientX, clientY) {
+    const rect = dom.canvasViewport.getBoundingClientRect();
+    const sx = clientX !== undefined ? clientX - rect.left : rect.width / 2;
+    const sy = clientY !== undefined ? clientY - rect.top : rect.height / 2;
+
+    const worldBefore = screenToWorld(sx, sy);
+    const newZoom = Math.min(Math.max(state.camera.zoom * factor, 0.1), 500);
+
+    state.camera.zoom = newZoom;
+    const worldAfter = screenToWorld(sx, sy);
+
+    state.camera.x += (worldBefore.x - worldAfter.x);
+    state.camera.y += (worldBefore.y - worldAfter.y);
+
+    render();
+  }
+
+  dom.canvasViewport.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    adjustZoom(zoomFactor, e.clientX, e.clientY);
+  }, { passive: false });
+
+  dom.canvasViewport.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return; // primary mouse button only
+    state.isDragging = true;
+    state.dragStart = { x: e.clientX, y: e.clientY };
+    state.cameraStart = { x: state.camera.x, y: state.camera.y };
+    dom.canvasViewport.setPointerCapture(e.pointerId);
+  });
+
+  dom.canvasViewport.addEventListener('pointermove', (e) => {
+    if (!state.isDragging) return;
+    const dx = (e.clientX - state.dragStart.x) / state.camera.zoom;
+    const dy = (e.clientY - state.dragStart.y) / state.camera.zoom;
+    state.camera.x = state.cameraStart.x - dx;
+    state.camera.y = state.cameraStart.y - dy;
+    render();
+  });
+
+  const endDrag = (e) => {
+    if (state.isDragging) {
+      state.isDragging = false;
+      try { dom.canvasViewport.releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+  };
+
+  dom.canvasViewport.addEventListener('pointerup', endDrag);
+  dom.canvasViewport.addEventListener('pointercancel', endDrag);
+  dom.canvasViewport.addEventListener('dblclick', resetCamera);
+
+  dom.btnZoomIn.addEventListener('click', () => adjustZoom(1.25));
+  dom.btnZoomOut.addEventListener('click', () => adjustZoom(1 / 1.25));
+  dom.btnRecenter.addEventListener('click', resetCamera);
+  dom.btnResetView.addEventListener('click', resetCamera);
+
+  // --- Depth Input & Slider Synchronization ---
+  function setDepth(val) {
+    const clamped = Math.max(0, Math.min(7, parseInt(val, 10) || 0));
+    state.depth = clamped;
+    dom.sliderDepth.value = clamped;
+    dom.inputDepth.value = clamped;
+    render();
+  }
+
+  dom.sliderDepth.addEventListener('input', (e) => setDepth(e.target.value));
+  dom.inputDepth.addEventListener('change', (e) => setDepth(e.target.value));
+
+  // --- Fractal Type Selection ---
+  function setFractalType(type) {
+    if (state.type === type) return;
+    state.type = type;
+
+    dom.btnTypeTriangle.classList.toggle('active', type === 'triangle');
+    dom.btnTypeTriangle.setAttribute('aria-checked', type === 'triangle');
+    dom.btnTypeCarpet.classList.toggle('active', type === 'carpet');
+    dom.btnTypeCarpet.setAttribute('aria-checked', type === 'carpet');
+
+    resetCamera();
+  }
+
+  dom.btnTypeTriangle.addEventListener('click', () => setFractalType('triangle'));
+  dom.btnTypeCarpet.addEventListener('click', () => setFractalType('carpet'));
+
+  // --- Render Mode Selection ---
+  function setRenderMode(mode) {
+    state.mode = mode;
+    [dom.btnModeFilled, dom.btnModeWireframe, dom.btnModeCutouts].forEach(btn => {
+      const active = btn.dataset.mode === mode;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-checked', active);
+    });
+    render();
+  }
+
+  dom.btnModeFilled.addEventListener('click', () => setRenderMode('filled'));
+  dom.btnModeWireframe.addEventListener('click', () => setRenderMode('wireframe'));
+  dom.btnModeCutouts.addEventListener('click', () => setRenderMode('cutouts'));
+
+  // --- Color Pickers & Presets ---
+  function updateColors(pattern, bg) {
+    state.patternColor = pattern;
+    state.backgroundColor = bg;
+    dom.colorPattern.value = pattern;
+    dom.colorBackground.value = bg;
+    dom.colorPatternHex.textContent = pattern.toUpperCase();
+    dom.colorBackgroundHex.textContent = bg.toUpperCase();
+    render();
+  }
+
+  dom.colorPattern.addEventListener('input', (e) => {
+    updateColors(e.target.value, state.backgroundColor);
+  });
+
+  dom.colorBackground.addEventListener('input', (e) => {
+    updateColors(state.patternColor, e.target.value);
+  });
+
+  dom.presetChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      dom.presetChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      updateColors(chip.dataset.pattern, chip.dataset.bg);
+    });
+  });
+
+  // --- Progressive Animation Playback ---
+  function toggleAnimation() {
+    if (state.isPlaying) {
+      stopAnimation();
+    } else {
+      startAnimation();
+    }
+  }
+
+  function startAnimation() {
+    state.isPlaying = true;
+    dom.iconPlay.classList.add('hidden');
+    dom.iconPause.classList.remove('hidden');
+    dom.labelPlay.textContent = 'Pause';
+
+    let current = 0;
+    setDepth(0);
+
+    state.animationTimer = setInterval(() => {
+      current++;
+      if (current > 7) {
+        current = 0;
+      }
+      setDepth(current);
+    }, 1100);
+  }
+
+  function stopAnimation() {
+    state.isPlaying = false;
+    clearInterval(state.animationTimer);
+    state.animationTimer = null;
+    dom.iconPlay.classList.remove('hidden');
+    dom.iconPause.classList.add('hidden');
+    dom.labelPlay.textContent = 'Play Evolution';
+  }
+
+  dom.btnPlayAnimation.addEventListener('click', toggleAnimation);
+  dom.btnStepPrev.addEventListener('click', () => {
+    stopAnimation();
+    setDepth(state.depth - 1);
+  });
+  dom.btnStepNext.addEventListener('click', () => {
+    stopAnimation();
+    setDepth(state.depth + 1);
+  });
+
+  // --- High-Resolution PNG & Vector SVG Export ---
+  function exportPNG() {
+    const exportCanvas = document.createElement('canvas');
+    const size = 2048; // Crisp 2K master export
+    exportCanvas.width = size;
+    exportCanvas.height = size;
+    const expCtx = exportCanvas.getContext('2d');
+
+    // Fill background
+    expCtx.fillStyle = state.backgroundColor;
+    expCtx.fillRect(0, 0, size, size);
+
+    // Center fractal
+    expCtx.save();
+    expCtx.translate(size / 2, size / 2);
+    const exportScale = (size / BASE_SIZE) * 0.82;
+    expCtx.scale(exportScale, exportScale);
+
+    if (state.type === 'triangle') {
+      renderSierpinskiTriangle(expCtx, exportScale, 0, 0, size, size);
+    } else {
+      renderSierpinskiCarpet(expCtx, exportScale, 0, 0, size, size);
+    }
+    expCtx.restore();
+
+    // Trigger download
+    exportCanvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sierpinski-${state.type}-depth-${state.depth}-${state.mode}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 'image/png');
+  }
+
+  function exportSVG() {
+    if (state.type === 'carpet' && state.depth >= 6) {
+      const count = state.depth === 7 ? '299,593' : '37,449';
+      const proceed = confirm(`At depth n = ${state.depth}, the Carpet SVG will generate ${count} vector elements, resulting in a large file. PNG export is recommended.\n\nDo you want to continue with SVG export?`);
+      if (!proceed) return;
+    }
+
+    const size = 1200;
+    const s = BASE_SIZE;
+    const n = state.depth;
+    const strokeColor = state.patternColor;
+    const fillColor = state.mode === 'wireframe' ? 'none' : state.patternColor;
+    const bgColor = state.backgroundColor;
+
+    let svgElements = '';
+
+    if (state.type === 'triangle') {
+      const h = s * (Math.sqrt(3) / 2);
+      const p1 = { x: size / 2, y: size / 2 - h * (2 / 3) };
+      const p2 = { x: size / 2 - s / 2, y: size / 2 + h / 3 };
+      const p3 = { x: size / 2 + s / 2, y: size / 2 + h / 3 };
+
+      const polygons = [];
+      collectTrianglePolygons(p1, p2, p3, n, polygons);
+
+      svgElements = polygons.map(pts => 
+        `<polygon points="${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)} ${pts[1].x.toFixed(2)},${pts[1].y.toFixed(2)} ${pts[2].x.toFixed(2)},${pts[2].y.toFixed(2)}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${state.mode === 'wireframe' ? 1.5 : 0.5}"/>`
+      ).join('\n  ');
+
+    } else {
+      // Carpet SVG
+      const startX = (size - s) / 2;
+      const startY = (size - s) / 2;
+      
+      // Base square
+      svgElements += `<rect x="${startX.toFixed(2)}" y="${startY.toFixed(2)}" width="${s.toFixed(2)}" height="${s.toFixed(2)}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${state.mode === 'wireframe' ? 1.5 : 0}"/>\n  `;
+
+      if (n > 0) {
+        const holes = [];
+        collectCarpetHoles(startX, startY, s, n, holes);
+        const holeFill = bgColor;
+        svgElements += holes.map(r => 
+          `<rect x="${r.x.toFixed(2)}" y="${r.y.toFixed(2)}" width="${r.w.toFixed(2)}" height="${r.h.toFixed(2)}" fill="${holeFill}" stroke="${state.mode === 'wireframe' ? strokeColor : 'none'}" stroke-width="1"/>`
+        ).join('\n  ');
+      }
+    }
+
+    const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+  <rect width="100%" height="100%" fill="${bgColor}"/>
+  ${svgElements}
+</svg>`;
+
+    const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sierpinski-${state.type}-depth-${state.depth}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function collectTrianglePolygons(a, b, c, depth, out) {
+    if (depth === 0) {
+      out.push([a, b, c]);
+      return;
+    }
+    const ab = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const bc = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
+    const ca = { x: (c.x + a.x) / 2, y: (c.y + a.y) / 2 };
+
+    collectTrianglePolygons(a, ab, ca, depth - 1, out);
+    collectTrianglePolygons(ab, b, bc, depth - 1, out);
+    collectTrianglePolygons(ca, bc, c, depth - 1, out);
+  }
+
+  function collectCarpetHoles(x, y, size, depth, out) {
+    const sub = size / 3;
+    out.push({ x: x + sub, y: y + sub, w: sub, h: sub });
+
+    if (depth > 1) {
+      const next = depth - 1;
+      collectCarpetHoles(x,           y,           sub, next, out);
+      collectCarpetHoles(x + sub,     y,           sub, next, out);
+      collectCarpetHoles(x + 2 * sub, y,           sub, next, out);
+      collectCarpetHoles(x,           y + sub,     sub, next, out);
+      collectCarpetHoles(x + 2 * sub, y + sub,     sub, next, out);
+      collectCarpetHoles(x,           y + 2 * sub, sub, next, out);
+      collectCarpetHoles(x + sub,     y + 2 * sub, sub, next, out);
+      collectCarpetHoles(x + 2 * sub, y + 2 * sub, sub, next, out);
+    }
+  }
+
+  dom.btnExportPNG.addEventListener('click', exportPNG);
+  dom.btnExportSVG.addEventListener('click', exportSVG);
+
+  // --- Theme Toggle ---
+  function initTheme() {
+    const savedTheme = localStorage.getItem('sierpinski-theme') || 
+      (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }
+
+  dom.btnThemeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('sierpinski-theme', next);
+  });
+
+  // --- Keyboard Shortcuts ---
+  window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      setDepth(state.depth + 1);
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setDepth(state.depth - 1);
+    } else if (e.key === '+' || e.key === '=') {
+      adjustZoom(1.2);
+    } else if (e.key === '-' || e.key === '_') {
+      adjustZoom(1 / 1.2);
+    } else if (e.key.toLowerCase() === 'r') {
+      resetCamera();
+    } else if (e.key === ' ') {
+      e.preventDefault();
+      toggleAnimation();
+    }
+  });
+
+  // --- Initialization ---
+  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+    resizeCanvas();
+    updateAnalytics();
+  });
+
+  // Immediate first pass
+  initTheme();
+  resizeCanvas();
+})();
+
+</script>
+</body>
+</html>
