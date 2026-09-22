@@ -22,6 +22,7 @@
       y: 0,
       zoom: 1
     },
+    showGuides: true,          // Draw partition/cut lines on shapes before dividing
     isDragging: false,
     isInteracting: false,      // true during active touch pinch, pan, or mouse drag
     dragStart: { x: 0, y: 0 },
@@ -45,6 +46,8 @@
     btnZoomIn: document.getElementById('btnZoomIn'),
     btnZoomOut: document.getElementById('btnZoomOut'),
     btnRecenter: document.getElementById('btnRecenter'),
+    btnToggleGuidesHUD: document.getElementById('btnToggleGuidesHUD'),
+    lblGuidesHUD: document.getElementById('lblGuidesHUD'),
 
     // Controls
     sliderDepth: document.getElementById('sliderDepth'),
@@ -52,6 +55,7 @@
     depthWarning: document.getElementById('depthWarning'),
     depthWarningText: document.getElementById('depthWarningText'),
     badgeComplexity: document.getElementById('badgeComplexity'),
+    toggleGuides: document.getElementById('toggleGuides'),
 
     // Render Mode
     btnModeFilled: document.getElementById('btnModeFilled'),
@@ -390,6 +394,10 @@
         drawTriangleHoles(targetCtx, p1, p2, p3, n, pixelScale, lodThreshold);
         targetCtx.fill();
       }
+
+      if (state.showGuides) {
+        drawTriangleSubdivisionGuides(targetCtx, p1, p2, p3, n, scale, pixelScale, lodThreshold);
+      }
       return;
     }
 
@@ -406,6 +414,52 @@
       targetCtx.fillStyle = state.patternColor;
       targetCtx.fill();
     }
+
+    // Draw partition cut lines on shapes before dividing
+    if (state.showGuides) {
+      drawTriangleSubdivisionGuides(targetCtx, p1, p2, p3, n, scale, pixelScale, lodThreshold);
+    }
+  }
+
+  function drawTriangleSubdivisionGuides(tCtx, a, b, c, depth, scale, pixelScale, lodThreshold) {
+    const side = Math.hypot(b.x - a.x, b.y - a.y) * pixelScale;
+    if (side < 14) return;
+
+    if (depth === 0) {
+      const ab = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const bc = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
+      const ca = { x: (c.x + a.x) / 2, y: (c.y + a.y) / 2 };
+
+      // Highlight the upcoming cutout void with subtle amber tint
+      tCtx.fillStyle = 'rgba(245, 158, 11, 0.25)';
+      tCtx.beginPath();
+      tCtx.moveTo(ab.x, ab.y);
+      tCtx.lineTo(bc.x, bc.y);
+      tCtx.lineTo(ca.x, ca.y);
+      tCtx.closePath();
+      tCtx.fill();
+
+      // Draw the 3 dividing cut lines connecting midpoints
+      tCtx.strokeStyle = '#fbbf24';
+      tCtx.lineWidth = Math.max(1.4 / scale, 1.0);
+      tCtx.setLineDash([4 / scale, 3 / scale]);
+      tCtx.beginPath();
+      tCtx.moveTo(ab.x, ab.y);
+      tCtx.lineTo(bc.x, bc.y);
+      tCtx.lineTo(ca.x, ca.y);
+      tCtx.closePath();
+      tCtx.stroke();
+      tCtx.setLineDash([]);
+      return;
+    }
+
+    const ab = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const bc = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
+    const ca = { x: (c.x + a.x) / 2, y: (c.y + a.y) / 2 };
+
+    drawTriangleSubdivisionGuides(tCtx, a, ab, ca, depth - 1, scale, pixelScale, lodThreshold);
+    drawTriangleSubdivisionGuides(tCtx, ab, b, bc, depth - 1, scale, pixelScale, lodThreshold);
+    drawTriangleSubdivisionGuides(tCtx, ca, bc, c, depth - 1, scale, pixelScale, lodThreshold);
   }
 
   function generateTriangles(tCtx, a, b, c, depth, pixelScale, lodThreshold) {
@@ -489,6 +543,10 @@
         targetCtx.fillStyle = state.patternColor;
         drawCarpetCutouts(targetCtx, -halfS, -halfS, s, n, pixelScale, lodThreshold, minX, maxX, minY, maxY);
       }
+
+      if (state.showGuides) {
+        drawCarpetSubdivisionGuides(targetCtx, -halfS, -halfS, s, n, scale, pixelScale, minX, maxX, minY, maxY);
+      }
       return;
     }
 
@@ -500,6 +558,10 @@
       if (n > 0) {
         drawCarpetWireframe(targetCtx, -halfS, -halfS, s, n, pixelScale, lodThreshold, minX, maxX, minY, maxY);
       }
+
+      if (state.showGuides) {
+        drawCarpetSubdivisionGuides(targetCtx, -halfS, -halfS, s, n, scale, pixelScale, minX, maxX, minY, maxY);
+      }
       return;
     }
 
@@ -508,11 +570,63 @@
     targetCtx.fillStyle = state.patternColor;
     targetCtx.fillRect(-halfS, -halfS, s, s);
 
-    if (n === 0) return;
+    if (n > 0) {
+      // 2. Punch out the removed center squares using background color
+      targetCtx.fillStyle = state.backgroundColor;
+      drawCarpetHoles(targetCtx, -halfS, -halfS, s, n, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+    }
 
-    // 2. Punch out the removed center squares using background color
-    targetCtx.fillStyle = state.backgroundColor;
-    drawCarpetHoles(targetCtx, -halfS, -halfS, s, n, pixelScale, lodThreshold, minX, maxX, minY, maxY);
+    // Draw partition cut lines on shapes before dividing
+    if (state.showGuides) {
+      drawCarpetSubdivisionGuides(targetCtx, -halfS, -halfS, s, n, scale, pixelScale, minX, maxX, minY, maxY);
+    }
+  }
+
+  function drawCarpetSubdivisionGuides(tCtx, x, y, size, depth, scale, pixelScale, minX, maxX, minY, maxY) {
+    if (x > maxX || x + size < minX || y > maxY || y + size < minY) return;
+    if (size * pixelScale < 14) return;
+
+    if (depth === 0) {
+      const sub = size / 3;
+
+      // Highlight the central void square with subtle amber tint
+      tCtx.fillStyle = 'rgba(245, 158, 11, 0.25)';
+      tCtx.fillRect(x + sub, y + sub, sub, sub);
+
+      // Draw 4 partition cut lines dividing square into 3x3 cells
+      tCtx.beginPath();
+      // 2 Vertical partition lines
+      tCtx.moveTo(x + sub, y);
+      tCtx.lineTo(x + sub, y + size);
+      tCtx.moveTo(x + 2 * sub, y);
+      tCtx.lineTo(x + 2 * sub, y + size);
+      // 2 Horizontal partition lines
+      tCtx.moveTo(x, y + sub);
+      tCtx.lineTo(x + size, y + sub);
+      tCtx.moveTo(x, y + 2 * sub);
+      tCtx.lineTo(x + size, y + 2 * sub);
+
+      tCtx.strokeStyle = '#fbbf24';
+      tCtx.lineWidth = Math.max(1.4 / scale, 1.0);
+      tCtx.setLineDash([4 / scale, 3 / scale]);
+      tCtx.stroke();
+
+      // Border for center void square
+      tCtx.strokeRect(x + sub, y + sub, sub, sub);
+      tCtx.setLineDash([]);
+      return;
+    }
+
+    const sub = size / 3;
+    const nextDepth = depth - 1;
+    drawCarpetSubdivisionGuides(tCtx, x,           y,           sub, nextDepth, scale, pixelScale, minX, maxX, minY, maxY);
+    drawCarpetSubdivisionGuides(tCtx, x + sub,     y,           sub, nextDepth, scale, pixelScale, minX, maxX, minY, maxY);
+    drawCarpetSubdivisionGuides(tCtx, x + 2 * sub, y,           sub, nextDepth, scale, pixelScale, minX, maxX, minY, maxY);
+    drawCarpetSubdivisionGuides(tCtx, x,           y + sub,     sub, nextDepth, scale, pixelScale, minX, maxX, minY, maxY);
+    drawCarpetSubdivisionGuides(tCtx, x + 2 * sub, y + sub,     sub, nextDepth, scale, pixelScale, minX, maxX, minY, maxY);
+    drawCarpetSubdivisionGuides(tCtx, x,           y + 2 * sub, sub, nextDepth, scale, pixelScale, minX, maxX, minY, maxY);
+    drawCarpetSubdivisionGuides(tCtx, x + sub,     y + 2 * sub, sub, nextDepth, scale, pixelScale, minX, maxX, minY, maxY);
+    drawCarpetSubdivisionGuides(tCtx, x + 2 * sub, y + 2 * sub, sub, nextDepth, scale, pixelScale, minX, maxX, minY, maxY);
   }
 
   function drawCarpetHoles(tCtx, x, y, size, depth, pixelScale, lodThreshold, minX, maxX, minY, maxY) {
@@ -868,6 +982,26 @@
   dom.btnModeWireframe.addEventListener('click', () => setRenderMode('wireframe'));
   dom.btnModeCutouts.addEventListener('click', () => setRenderMode('cutouts'));
 
+  // --- Subdivision Guides Toggle ---
+  function setGuides(enabled) {
+    state.showGuides = enabled;
+    if (dom.toggleGuides) dom.toggleGuides.checked = enabled;
+    if (dom.btnToggleGuidesHUD) {
+      dom.btnToggleGuidesHUD.classList.toggle('active', enabled);
+    }
+    if (dom.lblGuidesHUD) {
+      dom.lblGuidesHUD.textContent = enabled ? 'Lines: ON' : 'Lines: OFF';
+    }
+    requestRender();
+  }
+
+  if (dom.toggleGuides) {
+    dom.toggleGuides.addEventListener('change', (e) => setGuides(e.target.checked));
+  }
+  if (dom.btnToggleGuidesHUD) {
+    dom.btnToggleGuidesHUD.addEventListener('click', () => setGuides(!state.showGuides));
+  }
+
   // --- Color Pickers & Presets ---
   function updateColors(pattern, bg) {
     state.patternColor = pattern;
@@ -1009,6 +1143,14 @@
         `<polygon points="${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)} ${pts[1].x.toFixed(2)},${pts[1].y.toFixed(2)} ${pts[2].x.toFixed(2)},${pts[2].y.toFixed(2)}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${state.mode === 'wireframe' ? 1.5 : 0.5}"/>`
       ).join('\n  ');
 
+      if (state.showGuides && n <= 5) {
+        const guides = [];
+        collectTriangleGuidePolygons(p1, p2, p3, n, guides);
+        svgElements += '\n  ' + guides.map(g =>
+          `<polygon points="${g[0].x.toFixed(2)},${g[0].y.toFixed(2)} ${g[1].x.toFixed(2)},${g[1].y.toFixed(2)} ${g[2].x.toFixed(2)},${g[2].y.toFixed(2)}" fill="rgba(245,158,11,0.25)" stroke="#fbbf24" stroke-dasharray="4,3" stroke-width="1.2"/>`
+        ).join('\n  ');
+      }
+
     } else {
       // Carpet SVG
       const startX = (size - s) / 2;
@@ -1023,6 +1165,18 @@
         const holeFill = bgColor;
         svgElements += holes.map(r => 
           `<rect x="${r.x.toFixed(2)}" y="${r.y.toFixed(2)}" width="${r.w.toFixed(2)}" height="${r.h.toFixed(2)}" fill="${holeFill}" stroke="${state.mode === 'wireframe' ? strokeColor : 'none'}" stroke-width="1"/>`
+        ).join('\n  ');
+      }
+
+      if (state.showGuides && n <= 4) {
+        const guides = [];
+        collectCarpetGuideElements(startX, startY, s, n, guides);
+        svgElements += '\n  ' + guides.map(g =>
+          `<rect x="${g.cx.toFixed(2)}" y="${g.cy.toFixed(2)}" width="${g.sub.toFixed(2)}" height="${g.sub.toFixed(2)}" fill="rgba(245,158,11,0.25)" stroke="#fbbf24" stroke-dasharray="4,3" stroke-width="1.2"/>\n  ` +
+          `<line x1="${g.x1.toFixed(2)}" y1="${g.y.toFixed(2)}" x2="${g.x1.toFixed(2)}" y2="${(g.y+g.size).toFixed(2)}" stroke="#fbbf24" stroke-dasharray="4,3" stroke-width="1"/>\n  ` +
+          `<line x1="${g.x2.toFixed(2)}" y1="${g.y.toFixed(2)}" x2="${g.x2.toFixed(2)}" y2="${(g.y+g.size).toFixed(2)}" stroke="#fbbf24" stroke-dasharray="4,3" stroke-width="1"/>\n  ` +
+          `<line x1="${g.x.toFixed(2)}" y1="${g.y1.toFixed(2)}" x2="${(g.x+g.size).toFixed(2)}" y2="${g.y1.toFixed(2)}" stroke="#fbbf24" stroke-dasharray="4,3" stroke-width="1"/>\n  ` +
+          `<line x1="${g.x.toFixed(2)}" y1="${g.y2.toFixed(2)}" x2="${(g.x+g.size).toFixed(2)}" y2="${g.y2.toFixed(2)}" stroke="#fbbf24" stroke-dasharray="4,3" stroke-width="1"/>`
         ).join('\n  ');
       }
     }
@@ -1075,6 +1229,45 @@
     }
   }
 
+  function collectTriangleGuidePolygons(a, b, c, depth, out) {
+    if (depth === 0) {
+      const ab = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const bc = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
+      const ca = { x: (c.x + a.x) / 2, y: (c.y + a.y) / 2 };
+      out.push([ab, bc, ca]);
+      return;
+    }
+    const ab = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const bc = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
+    const ca = { x: (c.x + a.x) / 2, y: (c.y + a.y) / 2 };
+    collectTriangleGuidePolygons(a, ab, ca, depth - 1, out);
+    collectTriangleGuidePolygons(ab, b, bc, depth - 1, out);
+    collectTriangleGuidePolygons(ca, bc, c, depth - 1, out);
+  }
+
+  function collectCarpetGuideElements(x, y, size, depth, out) {
+    if (depth === 0) {
+      const sub = size / 3;
+      out.push({
+        x: x, y: y, size: size, sub: sub,
+        cx: x + sub, cy: y + sub,
+        x1: x + sub, x2: x + 2 * sub,
+        y1: y + sub, y2: y + 2 * sub
+      });
+      return;
+    }
+    const sub = size / 3;
+    const nextDepth = depth - 1;
+    collectCarpetGuideElements(x,           y,           sub, nextDepth, out);
+    collectCarpetGuideElements(x + sub,     y,           sub, nextDepth, out);
+    collectCarpetGuideElements(x + 2 * sub, y,           sub, nextDepth, out);
+    collectCarpetGuideElements(x,           y + sub,     sub, nextDepth, out);
+    collectCarpetGuideElements(x + 2 * sub, y + sub,     sub, nextDepth, out);
+    collectCarpetGuideElements(x,           y + 2 * sub, sub, nextDepth, out);
+    collectCarpetGuideElements(x + sub,     y + 2 * sub, sub, nextDepth, out);
+    collectCarpetGuideElements(x + 2 * sub, y + 2 * sub, sub, nextDepth, out);
+  }
+
   dom.btnExportPNG.addEventListener('click', exportPNG);
   dom.btnExportSVG.addEventListener('click', exportSVG);
 
@@ -1107,6 +1300,8 @@
       adjustZoom(1 / 1.2);
     } else if (e.key.toLowerCase() === 'r') {
       resetCamera();
+    } else if (e.key.toLowerCase() === 'g') {
+      setGuides(!state.showGuides);
     } else if (e.key === ' ') {
       e.preventDefault();
       toggleAnimation();
